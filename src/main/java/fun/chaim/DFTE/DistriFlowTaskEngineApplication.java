@@ -9,5 +9,4 @@ public class DistriFlowTaskEngineApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(DistriFlowTaskEngineApplication.class, args);
 	}
-
 }
