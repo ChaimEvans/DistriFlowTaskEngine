@@ -2,6 +2,9 @@ package fun.chaim.DFTE.entity;
 
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -71,16 +74,16 @@ public class Program {
     private Boolean lock = false;
 
     /**
+     * 创建时间
+     */
+    @Column(name = "created_at", nullable = false)
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+
+    /**
      * 更新时间
      */
     @Column(name = "updated_at", nullable = false)
+    @UpdateTimestamp
     private LocalDateTime updatedAt;
-
-    /**
-     * 实体更新前自动更新时间
-     */
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }

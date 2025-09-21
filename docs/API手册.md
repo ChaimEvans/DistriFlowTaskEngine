@@ -42,6 +42,13 @@ DistriFlowTaskEngine 是一个基于Spring Boot 3.5.5 + MySQL 8的分布式任�
 **请求参数**:
 - `file`: 上传的文件（multipart/form-data）
 
+**cURL示例**:
+```bash
+curl -X POST "http://localhost:8080/api/files/upload" \
+  -H "Content-Type: multipart/form-data" \
+  -F "file=@/path/to/your/file.txt"
+```
+
 **响应示例**:
 ```json
 {
@@ -51,19 +58,17 @@ DistriFlowTaskEngine 是一个基于Spring Boot 3.5.5 + MySQL 8的分布式任�
     "downloadPath": "/uploads/550e8400-e29b-41d4-a716-446655440000.txt",
     "originalFilename": "test.txt",
     "fileSize": 1024
-  }
 }
-```
-
-**cURL示例**:
-```bash
-curl -X POST "http://localhost:8080/api/files/upload" \
-  -H "Content-Type: multipart/form-data" \
-  -F "file=@/path/to/your/file.txt"
+}
 ```
 
 #### 1.2 列出上传文件
 **GET** `/api/files/list`
+
+**cURL示例**:
+```bash
+curl -X GET "http://localhost:8080/api/files/list"
+```
 
 **响应示例**:
 ```json
@@ -75,14 +80,9 @@ curl -X POST "http://localhost:8080/api/files/upload" \
       "downloadPath": "/uploads/550e8400-e29b-41d4-a716-446655440000.txt",
       "originalFilename": "test.txt",
       "fileSize": 1024
-    }
+  }
   ]
 }
-```
-
-**cURL示例**:
-```bash
-curl -X GET "http://localhost:8080/api/files/list"
 ```
 
 ### 2. 处理程序接口
@@ -90,7 +90,7 @@ curl -X GET "http://localhost:8080/api/files/list"
 #### 2.1 新建处理程序
 **POST** `/api/programs`
 
-**请求体**:
+**请求体示例**:
 ```json
 {
   "name": "test_program",
@@ -111,15 +111,54 @@ curl -X POST "http://localhost:8080/api/programs" \
     "description": "这是一个测试程序",
     "file": "/uploads/test_program.py",
     "cmd": "python test_program.py"
-  }'
+}'
 ```
 
-#### 2.2 查询处理程序信息（简单版）
+**响应示例**：
+```json
+{
+    "code": 200,
+    "message": "处理程序创建成功",
+    "data": {
+        "id": 1,
+        "name": "test_program",
+        "title": "测试程序",
+        "description": "这是一个测试程序",
+        "buildin": false,
+        "file": "/uploads/test_program.py",
+        "cmd": "python test_program.py",
+        "lock": false,
+        "inputParams": null,
+        "outputParams": null,
+        "updatedAt": "2025-09-20T11:03:54.772514"
+  },
+    "stacktrace": null
+}
+```
+
+#### 2.2 查询处理程序基础信息
 **GET** `/api/programs/{id}`
 
 **cURL示例**:
 ```bash
 curl -X GET "http://localhost:8080/api/programs/1"
+```
+
+**响应示例**：
+```json
+{
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+        "id": 1,
+        "name": "test_program",
+        "title": "测试程序",
+        "description": "这是一个测试程序",
+        "buildin": false,
+        "lock": false
+  },
+    "stacktrace": null
+}
 ```
 
 #### 2.3 查询处理程序详细信息
@@ -130,12 +169,72 @@ curl -X GET "http://localhost:8080/api/programs/1"
 curl -X GET "http://localhost:8080/api/programs/1/detail"
 ```
 
+**响应示例**：
+```json
+{
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+        "id": 1,
+        "name": "test_program",
+        "title": "测试程序",
+        "description": "这是一个测试程序",
+        "buildin": false,
+        "file": "/uploads/test_program.py",
+        "cmd": "python test_program.py",
+        "lock": false,
+        "inputParams": [
+            {
+                "id": 1,
+                "name": "input_param",
+                "type": "string",
+                "description": "输入参数",
+                "retval": false,
+                "require": true
+          }
+        ],
+        "outputParams": [
+            {
+                "id": 2,
+                "name": "output_param",
+                "type": "string",
+                "description": "输入参数",
+                "retval": true,
+                "require": true
+          }
+        ],
+        "updatedAt": "2025-09-20T11:03:54.772514"
+  },
+    "stacktrace": null
+}
+```
+
+
 #### 2.4 列出所有处理程序
 **GET** `/api/programs`
 
 **cURL示例**:
 ```bash
 curl -X GET "http://localhost:8080/api/programs"
+```
+
+**响应示例**：
+```json
+{
+    "code": 200,
+    "message": "操作成功",
+    "data": [
+        {
+            "id": 1,
+            "name": "test_program",
+            "title": "测试程序",
+            "description": "这是一个测试程序",
+            "buildin": false,
+            "lock": false
+      }
+    ],
+    "stacktrace": null
+}
 ```
 
 #### 2.5 查询处理程序名称
@@ -146,6 +245,16 @@ curl -X GET "http://localhost:8080/api/programs"
 curl -X GET "http://localhost:8080/api/programs/1/name"
 ```
 
+**响应示例**：
+```json
+{
+    "code": 200,
+    "message": "操作成功",
+    "data": "test_program",
+    "stacktrace": null
+}
+```
+
 #### 2.6 删除处理程序
 **DELETE** `/api/programs/{id}`
 
@@ -154,10 +263,10 @@ curl -X GET "http://localhost:8080/api/programs/1/name"
 curl -X DELETE "http://localhost:8080/api/programs/1"
 ```
 
-#### 2.7 修改处理程序
+#### 2.7 更新处理程序
 **PUT** `/api/programs/{id}`
 
-**请求体**:
+**请求体示例**:
 ```json
 {
   "name": "updated_program",
@@ -178,13 +287,35 @@ curl -X PUT "http://localhost:8080/api/programs/1" \
     "description": "更新后的描述",
     "file": "/uploads/updated_program.py",
     "cmd": "python updated_program.py"
-  }'
+}'
+```
+
+**响应示例**:
+```json
+{
+    "code": 200,
+    "message": "处理程序更新成功",
+    "data": {
+        "id": 1,
+        "name": "updated_program",
+        "title": "更新后的程序",
+        "description": "更新后的描述",
+        "buildin": false,
+        "file": "/uploads/updated_program.py",
+        "cmd": "python updated_program.py",
+        "lock": false,
+        "inputParams": null,
+        "outputParams": null,
+        "updatedAt": "2025-09-20T11:03:54.772514"
+  },
+    "stacktrace": null
+}
 ```
 
 #### 2.8 为处理程序创建参数
 **POST** `/api/programs/{programId}/params`
 
-**请求体**:
+**请求体示例**:
 ```json
 {
   "name": "input_param",
@@ -205,7 +336,24 @@ curl -X POST "http://localhost:8080/api/programs/1/params" \
     "description": "输入参数",
     "retval": false,
     "require": true
-  }'
+}'
+```
+
+**响应示例**：
+```json
+{
+    "code": 200,
+    "message": "参数创建成功",
+    "data": {
+        "id": 1,
+        "name": "input_param",
+        "type": "string",
+        "description": "输入参数",
+        "retval": false,
+        "require": true
+  },
+    "stacktrace": null
+}
 ```
 
 ### 3. 工作流接口
@@ -213,12 +361,12 @@ curl -X POST "http://localhost:8080/api/programs/1/params" \
 #### 3.1 新建工作流
 **POST** `/api/workflows`
 
-**请求体**:
+**请求体示例**:
 ```json
 {
   "name": "test_workflow",
   "description": "测试工作流",
-  "data": "{\"nodes\": [], \"edges\": []}"
+  "data": "{}"
 }
 ```
 
@@ -229,14 +377,32 @@ curl -X POST "http://localhost:8080/api/workflows" \
   -d '{
     "name": "test_workflow",
     "description": "测试工作流",
-    "data": "{\"nodes\": [], \"edges\": []}"
-  }'
+    "data": "{}"
+}'
+```
+
+**响应示例**:
+```json
+{
+    "code": 200,
+    "message": "工作流创建成功",
+    "data": {
+        "id": 1,
+        "name": "test_workflow",
+        "description": "测试工作流",
+        "data": "{}",
+        "lock": false,
+        "createdAt": "2025-09-20T11:56:19.918592",
+        "updatedAt": "2025-09-20T11:56:19.918592"
+  },
+    "stacktrace": null
+}
 ```
 
 #### 3.2 克隆工作流
 **POST** `/api/workflows/{id}/clone`
 
-**请求体**:
+**请求体示例**:
 ```json
 {
   "name": "cloned_workflow"
@@ -249,7 +415,25 @@ curl -X POST "http://localhost:8080/api/workflows/1/clone" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "cloned_workflow"
-  }'
+}'
+```
+
+**响应示例**:
+```json
+{
+    "code": 200,
+    "message": "工作流克隆成功",
+    "data": {
+        "id": 2,
+        "name": "cloned_workflow",
+        "description": "测试工作流",
+        "data": "{}",
+        "lock": false,
+        "createdAt": "2025-09-20T11:57:57.597033",
+        "updatedAt": "2025-09-20T11:57:57.597033"
+    },
+    "stacktrace": null
+}
 ```
 
 #### 3.3 查询工作流
@@ -260,12 +444,57 @@ curl -X POST "http://localhost:8080/api/workflows/1/clone" \
 curl -X GET "http://localhost:8080/api/workflows/1"
 ```
 
+**响应示例**:
+```json
+{
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+        "id": 1,
+        "name": "test_workflow",
+        "description": "测试工作流",
+        "data": "{}",
+        "lock": false,
+        "createdAt": "2025-09-20T11:56:19.918592",
+        "updatedAt": "2025-09-20T11:56:19.918592"
+    },
+    "stacktrace": null
+}
+```
+
 #### 3.4 列出所有工作流
 **GET** `/api/workflows`
 
 **cURL示例**:
 ```bash
 curl -X GET "http://localhost:8080/api/workflows"
+```
+
+**响应示例**:
+```json
+{
+    "code": 200,
+    "message": "操作成功",
+    "data": [
+        {
+            "id": 1,
+            "name": "test_workflow",
+            "description": "测试工作流",
+            "lock": false,
+            "createdAt": "2025-09-20T11:56:19.918592",
+            "updatedAt": "2025-09-20T11:56:19.918592"
+        },
+        {
+            "id": 2,
+            "name": "cloned_workflow",
+            "description": "测试工作流",
+            "lock": false,
+            "createdAt": "2025-09-20T11:57:57.597033",
+            "updatedAt": "2025-09-20T11:57:57.597033"
+        }
+    ],
+    "stacktrace": null
+}
 ```
 
 #### 3.5 删除工作流
@@ -276,15 +505,25 @@ curl -X GET "http://localhost:8080/api/workflows"
 curl -X DELETE "http://localhost:8080/api/workflows/1"
 ```
 
+**响应示例**:
+```json
+{
+    "code": 200,
+    "message": "操作成功",
+    "data": null,
+    "stacktrace": null
+}
+```
+
 #### 3.6 修改工作流
 **PUT** `/api/workflows/{id}`
 
-**请求体**:
+**请求体示例**:
 ```json
 {
   "name": "updated_workflow",
   "description": "更新后的工作流",
-  "data": "{\"nodes\": [], \"edges\": []}"
+  "data": "{}"
 }
 ```
 
@@ -295,8 +534,26 @@ curl -X PUT "http://localhost:8080/api/workflows/1" \
   -d '{
     "name": "updated_workflow",
     "description": "更新后的工作流",
-    "data": "{\"nodes\": [], \"edges\": []}"
-  }'
+    "data": "{}"
+}'
+```
+
+**响应示例**:
+```json
+{
+    "code": 200,
+    "message": "工作流更新成功",
+    "data": {
+        "id": 1,
+        "name": "updated_workflow",
+        "description": "更新后的工作流",
+        "data": "{}",
+        "lock": false,
+        "createdAt": "2025-09-20T11:57:57.597033",
+        "updatedAt": "2025-09-20T11:57:57.597033"
+    },
+    "stacktrace": null
+}
 ```
 
 #### 3.7 解锁工作流
@@ -305,6 +562,24 @@ curl -X PUT "http://localhost:8080/api/workflows/1" \
 **cURL示例**:
 ```bash
 curl -X POST "http://localhost:8080/api/workflows/1/unlock"
+```
+
+**响应示例**:
+```json
+{
+    "code": 200,
+    "message": "工作流解锁成功",
+    "data": {
+        "id": 1,
+        "name": "updated_workflow",
+        "description": "更新后的工作流",
+        "data": "{}",
+        "lock": false,
+        "createdAt": "2025-09-20T11:57:57.597033",
+        "updatedAt": "2025-09-20T12:09:11.315788"
+    },
+    "stacktrace": null
+}
 ```
 
 #### 3.8 查询使用工作流的项目
@@ -318,7 +593,7 @@ curl -X GET "http://localhost:8080/api/workflows/1/projects"
 #### 3.9 为工作流创建参数
 **POST** `/api/workflows/{workflowId}/params`
 
-**请求体**:
+**请求体示例**:
 ```json
 {
   "name": "workflow_param",
@@ -339,7 +614,24 @@ curl -X POST "http://localhost:8080/api/workflows/1/params" \
     "description": "工作流参数",
     "retval": false,
     "require": true
-  }'
+}'
+```
+
+**响应示例**:
+```json
+{
+    "code": 200,
+    "message": "参数创建成功",
+    "data": {
+        "id": 3,
+        "name": "workflow_param",
+        "type": "integer",
+        "description": "工作流参数",
+        "retval": false,
+        "require": true
+    },
+    "stacktrace": null
+}
 ```
 
 ### 4. 参数接口
@@ -352,10 +644,20 @@ curl -X POST "http://localhost:8080/api/workflows/1/params" \
 curl -X DELETE "http://localhost:8080/api/params/1"
 ```
 
+**响应示例**:
+```json
+{
+    "code": 200,
+    "message": "操作成功",
+    "data": null,
+    "stacktrace": null
+}
+```
+
 #### 4.2 修改参数
 **PUT** `/api/params/{id}`
 
-**请求体**:
+**请求体示例**:
 ```json
 {
   "name": "updated_param",
@@ -376,15 +678,52 @@ curl -X PUT "http://localhost:8080/api/params/1" \
     "description": "更新后的参数",
     "retval": false,
     "require": true
-  }'
+}'
+```
+
+**响应示例**:
+```json
+{
+    "code": 200,
+    "message": "参数更新成功",
+    "data": {
+        "id": 1,
+        "name": "updated_param",
+        "type": "string",
+        "description": "更新后的参数",
+        "retval": false,
+        "require": true
+    },
+    "stacktrace": null
+}
 ```
 
 #### 4.3 搜索参数
-**GET** `/api/params/search?type=string&retval=false&isProgram=true`
+**GET** `/api/params/search?type=string&retval=false&isWorkflow=false`
 
 **cURL示例**:
 ```bash
-curl -X GET "http://localhost:8080/api/params/search?type=string&retval=false&isProgram=true"
+curl -X GET "http://localhost:8080/api/params/search?type=string&retval=false&isWorkflow=false"
+```
+
+**响应示例**:
+```json
+{
+    "code": 200,
+    "message": "操作成功",
+    "data": [
+        {
+            "id": 2,
+            "name": "updated_param",
+            "type": "string",
+            "description": "更新后的参数",
+            "require": true,
+            "parentId": 1,
+            "parentName": "updated_program"
+        }
+    ],
+    "stacktrace": null
+}
 ```
 
 ### 5. 项目接口
@@ -392,12 +731,14 @@ curl -X GET "http://localhost:8080/api/params/search?type=string&retval=false&is
 #### 5.1 新建项目
 **POST** `/api/projects`
 
-**请求体**:
+**请求体示例**:
 ```json
 {
   "name": "test_project",
   "workflow": 1,
-  "workflowInput": "{\"param1\": \"value1\"}"
+  "workflowInput": {
+      "param1": "value1"
+  }
 }
 ```
 
@@ -408,8 +749,28 @@ curl -X POST "http://localhost:8080/api/projects" \
   -d '{
     "name": "test_project",
     "workflow": 1,
-    "workflowInput": "{\"param1\": \"value1\"}"
-  }'
+    "workflowInput": {
+        "param1": "value1"
+    }
+}'
+```
+
+**响应示例**:
+```json
+{
+    "code": 200,
+    "message": "项目创建成功",
+    "data": {
+        "id": 1,
+        "name": "test_project",
+        "workflow": 1,
+        "workflowInput": {
+            "param1": "value1"
+        },
+        "createdAt": "2025-09-20T13:05:43.530242"
+    },
+    "stacktrace": null
+}
 ```
 
 #### 5.2 查询项目
@@ -420,6 +781,24 @@ curl -X POST "http://localhost:8080/api/projects" \
 curl -X GET "http://localhost:8080/api/projects/1"
 ```
 
+**响应示例**:
+```json
+{
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+        "id": 1,
+        "name": "test_project",
+        "workflow": 1,
+        "workflowInput": {
+            "param1": "value1"
+        },
+        "createdAt": "2025-09-20T13:05:43.530242"
+    },
+    "stacktrace": null
+}
+```
+
 #### 5.3 列出所有项目
 **GET** `/api/projects`
 
@@ -428,15 +807,42 @@ curl -X GET "http://localhost:8080/api/projects/1"
 curl -X GET "http://localhost:8080/api/projects"
 ```
 
+**响应示例**:
+```json
+{
+    "code": 200,
+    "message": "操作成功",
+    "data": [
+        {
+            "id": 2,
+            "name": "test_project_1",
+            "workflow": 2,
+            "workflowName": "updated_workflow",
+            "createdAt": "2025-09-20T13:08:42.416319"
+        },
+        {
+            "id": 1,
+            "name": "test_project",
+            "workflow": 1,
+            "workflowName": "updated_workflow",
+            "createdAt": "2025-09-20T13:05:43.530242"
+        }
+    ],
+    "stacktrace": null
+}
+```
+
 #### 5.4 修改项目
 **PUT** `/api/projects/{id}`
 
-**请求体**:
+**请求体示例**:
 ```json
 {
   "name": "updated_project",
   "workflow": 2,
-  "workflowInput": "{\"param1\": \"updated_value\"}"
+  "workflowInput": {
+    "new_param": "new_value"
+  }
 }
 ```
 
@@ -447,8 +853,28 @@ curl -X PUT "http://localhost:8080/api/projects/1" \
   -d '{
     "name": "updated_project",
     "workflow": 2,
-    "workflowInput": "{\"param1\": \"updated_value\"}"
-  }'
+    "workflowInput": {
+        "new_param": "new_value"
+    }
+}'
+```
+
+**响应示例**:
+```json
+{
+    "code": 200,
+    "message": "项目更新成功",
+    "data": {
+        "id": 1,
+        "name": "updated_project",
+        "workflow": 2,
+        "workflowInput": {
+            "new_param": "new_value"
+        },
+        "createdAt": "2025-09-20T13:05:43.530242"
+    },
+    "stacktrace": null
+}
 ```
 
 ### 6. 任务接口
@@ -467,6 +893,11 @@ curl -X GET "http://localhost:8080/api/tasks?page=0&size=10"
 **cURL示例**:
 ```bash
 curl -X GET "http://localhost:8080/api/tasks/550e8400-e29b-41d4-a716-446655440000"
+```
+
+**响应示例**:
+```json
+
 ```
 
 ### 7. 运行记录接口

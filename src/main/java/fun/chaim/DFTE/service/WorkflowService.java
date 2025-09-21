@@ -1,6 +1,6 @@
 package fun.chaim.DFTE.service;
 
-import fun.chaim.DFTE.dto.ProjectSimpleDto;
+import fun.chaim.DFTE.dto.ParamDto;
 import fun.chaim.DFTE.dto.WorkflowDto;
 import fun.chaim.DFTE.dto.WorkflowSimpleDto;
 import fun.chaim.DFTE.entity.Param;
@@ -53,7 +53,31 @@ public class WorkflowService {
         Workflow savedWorkflow = workflowRepository.save(workflow);
         log.info("创建工作流成功: {}", savedWorkflow.getName());
         
-        return convertToDto(savedWorkflow);
+        return WorkflowDto.fromEntity(savedWorkflow, null, null);
+    }
+
+    /**
+     * 根据ID获取工作流
+     * 
+     * @param id 工作流ID
+     * @return 工作流信息
+     */
+    public WorkflowDto getWorkflowById(Integer id) {
+        Workflow workflow = workflowRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("工作流", id));
+
+        // 获取参数
+        List<Param> params = paramRepository.findByWorkflow(id);
+        List<ParamDto> inputParams = params.stream()
+                .filter(p -> !p.getRetval())
+                .map(ParamDto::fromEntity)
+                .collect(Collectors.toList());
+        List<ParamDto> outputParams = params.stream()
+                .filter(Param::getRetval)
+                .map(ParamDto::fromEntity)
+                .collect(Collectors.toList());
+
+        return WorkflowDto.fromEntity(workflow, inputParams, outputParams);
     }
     
     /**
@@ -81,21 +105,10 @@ public class WorkflowService {
         
         Workflow savedWorkflow = workflowRepository.save(newWorkflow);
         log.info("克隆工作流成功: {} -> {}", sourceWorkflow.getName(), newName);
+
+        // TODO 克隆参数
         
-        return convertToDto(savedWorkflow);
-    }
-    
-    /**
-     * 根据ID获取工作流
-     * 
-     * @param id 工作流ID
-     * @return 工作流信息
-     */
-    public WorkflowDto getWorkflowById(Integer id) {
-        Workflow workflow = workflowRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("工作流", id));
-        
-        return convertToDto(workflow);
+        return WorkflowDto.fromEntity(savedWorkflow, null, null);
     }
     
     /**
@@ -105,7 +118,7 @@ public class WorkflowService {
      */
     public List<WorkflowSimpleDto> getAllWorkflows() {
         return workflowRepository.findAll().stream()
-                .map(this::convertToSimpleDto)
+                .map(WorkflowSimpleDto::fromEntity)
                 .collect(Collectors.toList());
     }
     
@@ -151,7 +164,7 @@ public class WorkflowService {
         Workflow savedWorkflow = workflowRepository.save(existingWorkflow);
         log.info("更新工作流成功: {}", savedWorkflow.getName());
         
-        return convertToDto(savedWorkflow);
+        return getWorkflowById(id);
     }
     
     /**
@@ -169,24 +182,7 @@ public class WorkflowService {
         Workflow savedWorkflow = workflowRepository.save(workflow);
         log.info("解锁工作流成功: {}", savedWorkflow.getName());
         
-        return convertToDto(savedWorkflow);
-    }
-    
-    /**
-     * 获取使用指定工作流的所有项目
-     * 
-     * @param workflowId 工作流ID
-     * @return 项目列表
-     */
-    public List<ProjectSimpleDto> getProjectsByWorkflowId(Integer workflowId) {
-        // 验证工作流是否存在
-        if(!workflowRepository.existsById(workflowId))
-            throw new ResourceNotFoundException("工作流", workflowId);
-        
-        List<Object[]> results = workflowRepository.findProjectsByWorkflowId(workflowId);
-        return results.stream()
-                .map(result -> new ProjectSimpleDto((Integer) result[0], (String) result[1]))
-                .collect(Collectors.toList());
+        return getWorkflowById(id);
     }
 
     /**
@@ -209,6 +205,9 @@ public class WorkflowService {
             Program program = programRepository.findByName(node.getType())
                     .orElseThrow(() -> new ResourceNotFoundException("程序", node.getType()));
             for (WorkflowData.WorkflowNode.InputPort inputPort : node.getInputs()) {
+                String inputName = inputPort.getName();
+                if (inputPort.getType().equals("-1")) continue; // 跳过执行引脚
+                if (inputName.equals("Workflow Begin")) continue; // 跳过开始节点引脚
                 // 验证参数是否存在
                 Param param = paramRepository.findByProgramAndName(program.getId(), inputPort.getName())
                         .orElseThrow(() -> new ResourceNotFoundException("参数", inputPort.getName()));
@@ -219,34 +218,5 @@ public class WorkflowService {
             }
         }
         return workflow;
-    }
-    
-    /**
-     * 转换为DTO
-     */
-    private WorkflowDto convertToDto(Workflow workflow) {
-        WorkflowDto dto = new WorkflowDto();
-        dto.setId(workflow.getId());
-        dto.setName(workflow.getName());
-        dto.setDescription(workflow.getDescription());
-        dto.setData(workflow.getData());
-        dto.setLock(workflow.getLock());
-        dto.setCreatedAt(workflow.getCreatedAt());
-        dto.setUpdatedAt(workflow.getUpdatedAt());
-        return dto;
-    }
-    
-    /**
-     * 转换为简单DTO（排除data）
-     */
-    private WorkflowSimpleDto convertToSimpleDto(Workflow workflow) {
-        WorkflowSimpleDto dto = new WorkflowSimpleDto();
-        dto.setId(workflow.getId());
-        dto.setName(workflow.getName());
-        dto.setDescription(workflow.getDescription());
-        dto.setLock(workflow.getLock());
-        dto.setCreatedAt(workflow.getCreatedAt());
-        dto.setUpdatedAt(workflow.getUpdatedAt());
-        return dto;
     }
 }

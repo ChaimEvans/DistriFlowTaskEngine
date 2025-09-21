@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import fun.chaim.DFTE.entity.Project;
+
 /**
  * 项目数据传输对象
  * 
@@ -43,4 +45,20 @@ public class ProjectDto {
      * 创建时间
      */
     private LocalDateTime createdAt;
+
+    /**
+     * 从实体类转换成数据传输对象
+     * 
+     * @param project 实体类
+     * @return 数据传输对象
+     */
+    public static ProjectDto fromEntity(Project project) {
+        return new ProjectDto(
+            project.getId(), 
+            project.getName(), 
+            project.getWorkflow(), 
+            project.getWorkflowInput(), 
+            project.getCreatedAt()
+        );
+    }
 }

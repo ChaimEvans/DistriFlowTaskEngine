@@ -2,7 +2,7 @@ package fun.chaim.DFTE.controller;
 
 import fun.chaim.DFTE.common.ApiResponse;
 import fun.chaim.DFTE.dto.ParamDto;
-import fun.chaim.DFTE.dto.ParamInfoDto;
+import fun.chaim.DFTE.dto.projection.ParamProjections;
 import fun.chaim.DFTE.entity.Param;
 import fun.chaim.DFTE.service.ParamService;
 import lombok.RequiredArgsConstructor;
@@ -23,9 +23,9 @@ import java.util.List;
 @RequestMapping("/api/params")
 @RequiredArgsConstructor
 public class ParamController {
-    
+
     private final ParamService paramService;
-    
+
     /**
      * 指定参数id删除参数
      * 
@@ -37,11 +37,11 @@ public class ParamController {
         paramService.deleteParam(id);
         return ApiResponse.success();
     }
-    
+
     /**
      * 指定参数id修改参数信息
      * 
-     * @param id 参数ID
+     * @param id    参数ID
      * @param param 更新信息
      * @return 更新后的参数
      */
@@ -50,21 +50,21 @@ public class ParamController {
         ParamDto result = paramService.updateParam(id, param);
         return ApiResponse.success("参数更新成功", result);
     }
-    
+
     /**
      * 指定参数type、retval和bool(是program还是workflow)查询信息
      * 
-     * @param type 参数类型
-     * @param retval 是否是返回值
-     * @param isProgram 是否是处理程序参数
+     * @param type       参数类型
+     * @param retval     是否是返回值
+     * @param isWorkflow 是否是工作流参数
      * @return 参数信息列表
      */
     @GetMapping("/search")
-    public ApiResponse<List<ParamInfoDto>> searchParams(
+    public ApiResponse<List<ParamProjections.ParamInfo>> searchParams(
             @RequestParam String type,
             @RequestParam Boolean retval,
-            @RequestParam Boolean isProgram) {
-        List<ParamInfoDto> result = paramService.getParamsByTypeAndRetval(type, retval, isProgram);
+            @RequestParam(defaultValue = "false", required = false) Boolean isWorkflow) {
+        List<ParamProjections.ParamInfo> result = paramService.getParamsByTypeAndRetval(type, retval, isWorkflow);
         return ApiResponse.success(result);
     }
 }

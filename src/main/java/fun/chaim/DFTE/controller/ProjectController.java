@@ -2,16 +2,19 @@ package fun.chaim.DFTE.controller;
 
 import fun.chaim.DFTE.common.ApiResponse;
 import fun.chaim.DFTE.dto.ProjectDto;
-import fun.chaim.DFTE.dto.ProjectInfoDto;
+import fun.chaim.DFTE.dto.projection.ProjectProjections;
+import fun.chaim.DFTE.dto.projection.RunningRecordProjections;
 import fun.chaim.DFTE.entity.Project;
 import fun.chaim.DFTE.service.ProjectService;
 import fun.chaim.DFTE.service.RunningRecordService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.List;
+
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
-import java.util.List;
 
 /**
  * 项目控制器
@@ -53,13 +56,17 @@ public class ProjectController {
     }
     
     /**
-     * 列出所有项目信息（排除workflow_input，联合查询工作流名称）
-     * 
-     * @return 项目信息列表
+     * 获取项目列表（分页，可选筛选 workflowId、finish）
      */
     @GetMapping
-    public ApiResponse<List<ProjectInfoDto>> getAllProjects() {
-        List<ProjectInfoDto> result = projectService.getAllProjects();
+    public ApiResponse<List<ProjectProjections.ProjectInfo>> getAllProjects(
+            @RequestParam(required = false) Integer workflowId,
+            @RequestParam(required = false) Boolean finish,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        List<ProjectProjections.ProjectInfo> result =
+                projectService.getAllProjects(workflowId, finish, page, size).getContent();
         return ApiResponse.success(result);
     }
     
@@ -82,8 +89,8 @@ public class ProjectController {
      * @param id 项目ID
      */
     @PostMapping("/{id}/start")
-    public ApiResponse<Void> startProject(@PathVariable Integer id) {
-        runningRecordService.createAndStartRunningRecord(id);
-        return ApiResponse.success();
+    public ApiResponse<RunningRecordProjections.RunningRecordInfoView> startProject(@PathVariable Integer id) {
+        RunningRecordProjections.RunningRecordInfoView result = runningRecordService.createAndStartRunningRecord(id);
+        return ApiResponse.success("项目开始成功", result);
     }
 }

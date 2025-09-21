@@ -1,5 +1,6 @@
 package fun.chaim.DFTE.repository;
 
+import fun.chaim.DFTE.dto.projection.RunningRecordProjections;
 import fun.chaim.DFTE.entity.RunningRecord;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,7 +20,7 @@ import java.util.Optional;
  */
 @Repository
 public interface RunningRecordRepository extends JpaRepository<RunningRecord, Integer> {
-    
+
     /**
      * 根据工作流ID查找所有运行记录
      * 
@@ -27,7 +28,7 @@ public interface RunningRecordRepository extends JpaRepository<RunningRecord, In
      * @return 运行记录列表
      */
     List<RunningRecord> findByWorkflow(Integer workflowId);
-    
+
     /**
      * 根据项目ID查找所有运行记录
      * 
@@ -35,7 +36,7 @@ public interface RunningRecordRepository extends JpaRepository<RunningRecord, In
      * @return 运行记录列表
      */
     List<RunningRecord> findByProject(Integer projectId);
-    
+
     /**
      * 根据完成状态查找所有运行记录
      * 
@@ -48,37 +49,39 @@ public interface RunningRecordRepository extends JpaRepository<RunningRecord, In
      * 根据ID查询运行记录信息（排除workflow_data/input/output，联合查询工作流名称和项目名称）
      * 
      * @param id 运行记录ID
-     * @return 包含运行记录信息的对象数组，格式为：
-     *         [id, workflow, project, finish, createdAt, updatedAt, workflowName, projectName]
+     * @return 运行记录信息
      */
-    @Query("SELECT r.id, r.workflow, r.project, r.finish, r.createdAt, r.updatedAt, " +
-        "w.name AS workflowName, p.name AS projectName " +
-        "FROM RunningRecord r " +
-        "LEFT JOIN Workflow w ON r.workflow = w.id " +
-        "LEFT JOIN Project p ON r.project = p.id " +
-        "WHERE r.id = :id")
-    Optional<Object[]> findRunningRecordInfoById(@Param("id") Integer id);
-    
+    @Query("SELECT r.id AS id, r.workflow AS workflow, w.name AS workflowName, " +
+            "r.project AS project, p.name AS projectName, r.finish AS finish, " +
+            "r.createdAt AS createdAt, r.updatedAt AS updatedAt " +
+            "FROM RunningRecord r " +
+            "LEFT JOIN Workflow w ON r.workflow = w.id " +
+            "LEFT JOIN Project p ON r.project = p.id " +
+            "WHERE r.id = :id")
+    Optional<RunningRecordProjections.RunningRecordInfoView> findRunningRecordInfoById(@Param("id") Integer id);
+
     /**
      * 分页按条件查询运行记录数据（排除workflow_data、workflow_input、workflow_output，联合查询工作流名称、项目名称）
      * 
      * @param workflowId 工作流ID（可选）
-     * @param projectId 项目ID（可选）
-     * @param finish 是否完成（可选）
-     * @param pageable 分页参数
+     * @param projectId  项目ID（可选）
+     * @param finish     是否完成（可选）
+     * @param pageable   分页参数
      * @return 运行记录信息分页
      */
-    @Query("SELECT r.id, r.workflow, r.project, r.finish, r.createdAt, r.updatedAt, " +
-           "w.name as workflowName, p.name as projectName " +
-           "FROM RunningRecord r " +
-           "LEFT JOIN Workflow w ON r.workflow = w.id " +
-           "LEFT JOIN Project p ON r.project = p.id " +
-           "WHERE (:workflowId IS NULL OR r.workflow = :workflowId) " +
-           "AND (:projectId IS NULL OR r.project = :projectId) " +
-           "AND (:finish IS NULL OR r.finish = :finish) " +
-           "ORDER BY r.createdAt DESC")
-    Page<Object[]> findRunningRecordInfoPage(@Param("workflowId") Integer workflowId,
-                                           @Param("projectId") Integer projectId,
-                                           @Param("finish") Boolean finish,
-                                           Pageable pageable);
+    @Query("SELECT r.id AS id, r.workflow AS workflow, w.name AS workflowName, " +
+            "r.project AS project, p.name AS projectName, r.finish AS finish, " +
+            "r.createdAt AS createdAt, r.updatedAt AS updatedAt " +
+            "FROM RunningRecord r " +
+            "LEFT JOIN Workflow w ON r.workflow = w.id " +
+            "LEFT JOIN Project p ON r.project = p.id " +
+            "WHERE (:workflowId IS NULL OR r.workflow = :workflowId) " +
+            "AND (:projectId IS NULL OR r.project = :projectId) " +
+            "AND (:finish IS NULL OR r.finish = :finish) " +
+            "ORDER BY r.createdAt DESC")
+    Page<RunningRecordProjections.RunningRecordInfoView> findRunningRecordInfoPage(
+            @Param("workflowId") Integer workflowId,
+            @Param("projectId") Integer projectId,
+            @Param("finish") Boolean finish,
+            Pageable pageable);
 }

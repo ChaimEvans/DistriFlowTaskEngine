@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import fun.chaim.DFTE.entity.Program;
+
 /**
  * 处理程序数据传输对象
  * 
@@ -69,7 +71,37 @@ public class ProgramDto {
     private List<ParamDto> outputParams;
 
     /**
+     * 创建时间
+     */
+    private LocalDateTime createdAt;
+
+    /**
      * 更新时间
      */
     private LocalDateTime updatedAt;
+
+    /**
+     * 从实体类转换成数据传输对象
+     * 
+     * @param program 实体类
+     * @param inputParams 输入参数列表
+     * @param outputParams 返回值列表
+     * @return 数据传输对象
+     */
+    public static ProgramDto fromEntity(Program program, List<ParamDto> inputParams, List<ParamDto> outputParams) {
+        return new ProgramDto(
+            program.getId(),
+            program.getName(),
+            program.getTitle(),
+            program.getDescription(),
+            program.getBuildin(),
+            program.getFile(),
+            program.getCmd(),
+            program.getLock(),
+            inputParams,
+            outputParams,
+            program.getCreatedAt(),
+            program.getUpdatedAt()
+        );
+    }
 }

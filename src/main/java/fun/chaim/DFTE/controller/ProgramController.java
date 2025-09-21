@@ -49,8 +49,8 @@ public class ProgramController {
      * @return 处理程序信息
      */
     @GetMapping("/{id}")
-    public ApiResponse<ProgramDto> getProgramById(@PathVariable Integer id) {
-        ProgramDto result = programService.getProgramById(id);
+    public ApiResponse<ProgramSimpleDto> getProgramById(@PathVariable Integer id) {
+        ProgramSimpleDto result = programService.getProgramById(id);
         return ApiResponse.success(result);
     }
     

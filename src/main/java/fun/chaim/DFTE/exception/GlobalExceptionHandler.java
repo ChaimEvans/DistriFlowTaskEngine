@@ -158,13 +158,23 @@ public class GlobalExceptionHandler {
         log.error("未处理的异常", e);
         String stacktrace = null;
         // 在开发环境或调试模式下返回堆栈跟踪
-        if (log.isDebugEnabled()) {
+        if (true) {
             java.io.StringWriter sw = new java.io.StringWriter();
             java.io.PrintWriter pw = new java.io.PrintWriter(sw);
             e.printStackTrace(pw);
             stacktrace = sw.toString();
         }
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error(500, "服务器内部错误", stacktrace));
+                .body(ApiResponse.error(500, "服务器内部错误: " + getAllExceptionMessage(e), stacktrace));
+    }
+
+    public static String getAllExceptionMessage(Exception e) {
+        String message = "\n\t1. " + e.getMessage();
+        Throwable cause = e.getCause();
+        for (int i = 2; cause != null; i++) {
+            message += String.format("\n\t%d. %s", i, cause.getMessage());
+            cause = cause.getCause();
+        }
+        return message;
     }
 }

@@ -4,7 +4,12 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -76,12 +81,14 @@ public class RunningRecord {
      * 创建时间
      */
     @Column(name = "created_at", nullable = false)
+    @CreationTimestamp
     private LocalDateTime createdAt;
     
     /**
      * 更新时间
      */
     @Column(name = "updated_at", nullable = false)
+    @UpdateTimestamp
     private LocalDateTime updatedAt;
     
     /**
@@ -89,6 +96,7 @@ public class RunningRecord {
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "workflow", insertable = false, updatable = false)
+    @OnDelete(action = OnDeleteAction.SET_NULL)
     private Workflow workflowEntity;
     
     /**
@@ -96,22 +104,6 @@ public class RunningRecord {
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project", insertable = false, updatable = false)
+    @OnDelete(action = OnDeleteAction.SET_NULL)
     private Project projectEntity;
-    
-    /**
-     * 实体保存前自动设置时间
-     */
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-    
-    /**
-     * 实体更新前自动更新时间
-     */
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }

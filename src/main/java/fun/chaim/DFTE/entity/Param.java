@@ -1,5 +1,8 @@
 package fun.chaim.DFTE.entity;
 
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -73,6 +76,7 @@ public class Param {
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "program", insertable = false, updatable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Program programEntity;
     
     /**
@@ -80,5 +84,6 @@ public class Param {
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "workflow", insertable = false, updatable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Workflow workflowEntity;
 }

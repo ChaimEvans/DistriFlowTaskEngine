@@ -4,7 +4,11 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.type.SqlTypes;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -38,11 +42,17 @@ public class Project {
      */
     @Column(name = "name", length = 128, nullable = false)
     private String name;
+
+    /**
+     * 是否已完成
+     */
+    @Column(name = "finish", nullable = false)
+    private Boolean finish = false;
     
     /**
      * 所使用的工作流ID（外键）
      */
-    @Column(name = "workflow", nullable = false)
+    @Column(name = "workflow")
     private Integer workflow;
     
     /**
@@ -56,6 +66,7 @@ public class Project {
      * 创建时间
      */
     @Column(name = "created_at", nullable = false)
+    @CreationTimestamp
     private LocalDateTime createdAt;
     
     /**
@@ -63,13 +74,6 @@ public class Project {
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "workflow", insertable = false, updatable = false)
+    @OnDelete(action = OnDeleteAction.SET_NULL)
     private Workflow workflowEntity;
-    
-    /**
-     * 实体保存前自动设置时间
-     */
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
 }

@@ -58,7 +58,7 @@ public class ProgramService {
         Program savedProgram = programRepository.save(program);
         log.info("创建处理程序成功: {}", savedProgram.getName());
         
-        return convertToDto(savedProgram);
+        return ProgramDto.fromEntity(savedProgram, null, null);
     }
     
     /**
@@ -67,27 +67,11 @@ public class ProgramService {
      * @param id 处理程序ID
      * @return 处理程序信息
      */
-    public ProgramDto getProgramById(Integer id) {
+    public ProgramSimpleDto getProgramById(Integer id) {
         Program program = programRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("处理程序", id));
         
-        ProgramDto dto = convertToDto(program);
-        
-        // 获取参数信息
-        List<Param> params = paramRepository.findByProgram(id);
-        List<ParamDto> inputParams = params.stream()
-                .filter(p -> !p.getRetval())
-                .map(this::convertParamToDto)
-                .collect(Collectors.toList());
-        List<ParamDto> outputParams = params.stream()
-                .filter(Param::getRetval)
-                .map(this::convertParamToDto)
-                .collect(Collectors.toList());
-        
-        dto.setInputParams(inputParams);
-        dto.setOutputParams(outputParams);
-        
-        return dto;
+        return ProgramSimpleDto.fromEntity(program);
     }
     
     /**
@@ -100,23 +84,18 @@ public class ProgramService {
         Program program = programRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("处理程序", id));
         
-        ProgramDto dto = convertToDto(program);
-        
         // 获取参数信息
         List<Param> params = paramRepository.findByProgram(id);
         List<ParamDto> inputParams = params.stream()
                 .filter(p -> !p.getRetval())
-                .map(this::convertParamToDto)
+                .map(ParamDto::fromEntity)
                 .collect(Collectors.toList());
         List<ParamDto> outputParams = params.stream()
                 .filter(Param::getRetval)
-                .map(this::convertParamToDto)
+                .map(ParamDto::fromEntity)
                 .collect(Collectors.toList());
         
-        dto.setInputParams(inputParams);
-        dto.setOutputParams(outputParams);
-        
-        return dto;
+        return ProgramDto.fromEntity(program, inputParams, outputParams);
     }
     
     /**
@@ -126,7 +105,7 @@ public class ProgramService {
      */
     public List<ProgramSimpleDto> getAllPrograms() {
         return programRepository.findAll().stream()
-                .map(this::convertToSimpleDto)
+                .map(ProgramSimpleDto::fromEntity)
                 .collect(Collectors.toList());
     }
     
@@ -191,51 +170,6 @@ public class ProgramService {
         Program savedProgram = programRepository.save(existingProgram);
         log.info("更新处理程序成功: {}", savedProgram.getName());
         
-        return convertToDto(savedProgram);
-    }
-    
-    /**
-     * 转换为DTO
-     */
-    private ProgramDto convertToDto(Program program) {
-        ProgramDto dto = new ProgramDto();
-        dto.setId(program.getId());
-        dto.setName(program.getName());
-        dto.setTitle(program.getTitle());
-        dto.setDescription(program.getDescription());
-        dto.setBuildin(program.getBuildin());
-        dto.setFile(program.getFile());
-        dto.setCmd(program.getCmd());
-        dto.setLock(program.getLock());
-        dto.setUpdatedAt(program.getUpdatedAt());
-        return dto;
-    }
-    
-    /**
-     * 转换为简单DTO（排除file、cmd）
-     */
-    private ProgramSimpleDto convertToSimpleDto(Program program) {
-        ProgramSimpleDto dto = new ProgramSimpleDto();
-        dto.setId(program.getId());
-        dto.setName(program.getName());
-        dto.setTitle(program.getTitle());
-        dto.setDescription(program.getDescription());
-        dto.setBuildin(program.getBuildin());
-        dto.setLock(program.getLock());
-        return dto;
-    }
-    
-    /**
-     * 转换参数为DTO
-     */
-    private ParamDto convertParamToDto(Param param) {
-        ParamDto dto = new ParamDto();
-        dto.setId(param.getId());
-        dto.setName(param.getName());
-        dto.setType(param.getType());
-        dto.setDescription(param.getDescription());
-        dto.setRetval(param.getRetval());
-        dto.setRequire(param.getRequire());
-        return dto;
+        return getProgramDetailById(id);
     }
 }

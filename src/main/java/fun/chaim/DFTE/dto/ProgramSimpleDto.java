@@ -1,5 +1,6 @@
 package fun.chaim.DFTE.dto;
 
+import fun.chaim.DFTE.entity.Program;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -45,4 +46,21 @@ public class ProgramSimpleDto {
      * 运行时上锁状态
      */
     private Boolean lock;
+
+    /**
+     * 从实体类转换成数据传输对象
+     * 
+     * @param program 实体类
+     * @return 数据传输对象
+     */
+    public static ProgramSimpleDto fromEntity(Program program) {
+        return new ProgramSimpleDto(
+            program.getId(),
+            program.getName(),
+            program.getTitle(),
+            program.getDescription(),
+            program.getBuildin(),
+            program.getLock()
+        );
+    }
 }

@@ -1,7 +1,7 @@
 package fun.chaim.DFTE.service;
 
 import fun.chaim.DFTE.dto.ParamDto;
-import fun.chaim.DFTE.dto.ParamInfoDto;
+import fun.chaim.DFTE.dto.projection.ParamProjections;
 import fun.chaim.DFTE.entity.Param;
 import fun.chaim.DFTE.exception.ResourceNotFoundException;
 import fun.chaim.DFTE.exception.ValidationException;
@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 参数服务
@@ -45,7 +44,7 @@ public class ParamService {
             throw new ResourceNotFoundException("处理程序", programId);
         
         // 验证参数名称是否重复
-        if (paramRepository.findByProgramAndName(programId, param.getName()) != null) {
+        if (paramRepository.existsByProgramAndName(programId, param.getName())) {
             throw new ValidationException("处理程序参数名称已存在: " + param.getName());
         }
         
@@ -54,7 +53,7 @@ public class ParamService {
         Param savedParam = paramRepository.save(param);
         log.info("为处理程序 {} 创建参数成功: {}", programId, param.getName());
         
-        return convertToDto(savedParam);
+        return ParamDto.fromEntity(savedParam);
     }
     
     /**
@@ -71,7 +70,7 @@ public class ParamService {
             throw new ResourceNotFoundException("工作流", workflowId);
         
         // 验证参数名称是否重复
-        if (paramRepository.findByWorkflowAndName(workflowId, param.getName()) != null) {
+        if (paramRepository.existsByWorkflowAndName(workflowId, param.getName())) {
             throw new ValidationException("工作流参数名称已存在: " + param.getName());
         }
         
@@ -80,7 +79,7 @@ public class ParamService {
         Param savedParam = paramRepository.save(param);
         log.info("为工作流 {} 创建参数成功: {}", workflowId, param.getName());
         
-        return convertToDto(savedParam);
+        return ParamDto.fromEntity(savedParam);
     }
     
     /**
@@ -112,11 +111,11 @@ public class ParamService {
         // 检查名称是否与其他参数冲突
         if (!existingParam.getName().equals(param.getName())) {
             if (existingParam.getProgram() != null) {
-                if (paramRepository.findByProgramAndName(existingParam.getProgram(), param.getName()) != null) {
+                if (paramRepository.existsByProgramAndName(existingParam.getProgram(), param.getName())) {
                     throw new ValidationException("处理程序参数名称已存在: " + param.getName());
                 }
             } else if (existingParam.getWorkflow() != null) {
-                if (paramRepository.findByWorkflowAndName(existingParam.getWorkflow(), param.getName()) != null) {
+                if (paramRepository.existsByWorkflowAndName(existingParam.getWorkflow(), param.getName())) {
                     throw new ValidationException("工作流参数名称已存在: " + param.getName());
                 }
             }
@@ -132,7 +131,7 @@ public class ParamService {
         Param savedParam = paramRepository.save(existingParam);
         log.info("更新参数成功: {}", savedParam.getName());
         
-        return convertToDto(savedParam);
+        return ParamDto.fromEntity(savedParam);
     }
     
     /**
@@ -140,35 +139,10 @@ public class ParamService {
      * 
      * @param type 参数类型
      * @param retval 是否是返回值
-     * @param isProgram 是否是处理程序参数
+     * @param isWorkflow 是否是工作流参数
      * @return 参数信息列表
      */
-    public List<ParamInfoDto> getParamsByTypeAndRetval(String type, Boolean retval, Boolean isProgram) {
-        List<Object[]> results = paramRepository.findParamsByTypeAndRetval(type, retval, isProgram);
-        return results.stream()
-                .map(result -> new ParamInfoDto(
-                        (Integer) result[0],
-                        (String) result[1],
-                        (String) result[2],
-                        (String) result[3],
-                        (Boolean) result[4],
-                        (Integer) result[6],
-                        (String) result[5]
-                ))
-                .collect(Collectors.toList());
-    }
-    
-    /**
-     * 转换为DTO
-     */
-    private ParamDto convertToDto(Param param) {
-        ParamDto dto = new ParamDto();
-        dto.setId(param.getId());
-        dto.setName(param.getName());
-        dto.setType(param.getType());
-        dto.setDescription(param.getDescription());
-        dto.setRetval(param.getRetval());
-        dto.setRequire(param.getRequire());
-        return dto;
+    public List<ParamProjections.ParamInfo> getParamsByTypeAndRetval(String type, Boolean retval, Boolean isWorkflow) {
+        return paramRepository.findParamsByTypeAndRetval(type, retval, isWorkflow);
     }
 }

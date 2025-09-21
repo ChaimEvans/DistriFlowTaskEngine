@@ -28,7 +28,7 @@ public class WorkflowDataConverter implements AttributeConverter<WorkflowData, S
         try {
             return mapper.writeValueAsString(attribute);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("工作流数据 序列化失败", e);
+            throw new RuntimeException("[工作流数据] 序列化失败", e);
         }
     }
 
@@ -37,7 +37,7 @@ public class WorkflowDataConverter implements AttributeConverter<WorkflowData, S
         try {
             return mapper.readValue(dbData, WorkflowData.class).disposal();
         } catch (IOException e) {
-            throw new RuntimeException("工作流数据 解析失败", e);
+            throw new RuntimeException("[工作流数据] 解析失败", e);
         }
     }
 }

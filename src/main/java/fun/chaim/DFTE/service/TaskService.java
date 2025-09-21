@@ -1,27 +1,25 @@
 package fun.chaim.DFTE.service;
 
-import fun.chaim.DFTE.dto.TaskDetailDto;
 import fun.chaim.DFTE.dto.TaskInQueueDto;
-import fun.chaim.DFTE.dto.TaskInfoDto;
+import fun.chaim.DFTE.dto.projection.TaskProjections;
 import fun.chaim.DFTE.entity.Program;
-import fun.chaim.DFTE.entity.Project;
 import fun.chaim.DFTE.entity.RunningRecord;
 import fun.chaim.DFTE.entity.Task;
 import fun.chaim.DFTE.entity.Workflow;
 import fun.chaim.DFTE.entity.WorkflowData;
 import fun.chaim.DFTE.entity.WorkflowData.WorkflowNode;
+import fun.chaim.DFTE.exception.BusinessException;
 import fun.chaim.DFTE.exception.ResourceNotFoundException;
 import fun.chaim.DFTE.repository.ProgramRepository;
 import fun.chaim.DFTE.repository.TaskRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import org.springframework.amqp.core.Message;
+// import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,7 +27,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.rabbitmq.client.Channel;
+// import com.rabbitmq.client.Channel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,17 +52,29 @@ public class TaskService {
     private final RabbitTemplate rabbitTemplate;
     
     /**
-     * 分页查询任务数据（排除params、retdata，联合查询项目名、工作流名、处理程序名）
-     * 
-     * @param page 页码（从0开始）
+     * 分页查询任务数据（排除 params、retdata，联合查询项目名、工作流名、处理程序名）
+     * 可根据 runningRecord、project、workflow、nodeId、program、status 过滤
+     *
+     * @param runningRecord 运行记录 ID，可为空
+     * @param project 项目 ID，可为空
+     * @param workflow 工作流 ID，可为空
+     * @param nodeId 节点 ID，可为空
+     * @param program 程序 ID，可为空
+     * @param status 状态，可为空
+     * @param page 页码（从 0 开始）
      * @param size 每页大小
-     * @return 任务信息分页
+     * @return 任务信息分页（DTO）
      */
-    public Page<TaskInfoDto> getTaskInfoPage(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Object[]> results = taskRepository.findTaskInfoPage(pageable);
-        
-        return results.map(this::convertToTaskInfoDto);
+    public Page<TaskProjections.TaskInfo> getTaskInfoPage(
+            Integer runningRecord,
+            Integer project,
+            Integer workflow,
+            Integer nodeId,
+            Integer program,
+            Integer status,
+            int page,
+            int size) {
+        return taskRepository.findTaskInfoPage(runningRecord, project, workflow, nodeId, program, status, PageRequest.of(page, size));
     }
     
     /**
@@ -73,11 +83,9 @@ public class TaskService {
      * @param uuid 任务UUID
      * @return 任务详细信息
      */
-    public TaskDetailDto getTaskDetailByUuid(UUID uuid) {
-        Object[] result = taskRepository.findTaskInfoByUuid(uuid)
+    public TaskProjections.TaskDetail getTaskDetailByUuid(UUID uuid) {
+        return taskRepository.findTaskInfoByUuid(uuid)
                 .orElseThrow(() -> new ResourceNotFoundException("任务", uuid));
-        
-        return convertToTaskDetailDto(result);
     }
 
     /**
@@ -92,7 +100,7 @@ public class TaskService {
      * @return 任务UUID
      */
     @Transactional
-    public Optional<UUID> createAndStartTask(UUID parentUuid, String name, Integer projectId, Integer workflowId, Integer nodeId, Integer programId, ObjectNode params) {
+    public Optional<UUID> createAndStartTask(UUID parentUuid, String name, Integer runningRecordId, Integer projectId, Integer workflowId, Integer nodeId, Integer programId, ObjectNode params) {
         Optional<Program> program = programRepository.findById(programId);
         if (!program.isPresent()) {
             log.error("未找到处理程序: {}", programId);
@@ -103,13 +111,15 @@ public class TaskService {
         task.setUuid(taskUuid);
         task.setParent(parentUuid);
         task.setName(name == null ? String.format("%s(%s)", program.get().getName(), taskUuid) : name);
+        task.setRunningRecord(runningRecordId);
         task.setProject(projectId);
         task.setWorkflow(workflowId);
         task.setNodeId(nodeId);
         task.setProgram(programId);
         task.setParams(params);
         task = taskRepository.save(task);
-        TaskInQueueDto taskInQueueDto = convertToTaskInQueueDto(task);
+        TaskInQueueDto taskInQueueDto = taskRepository.findTaskInQueueByUuid(taskUuid)
+                .orElseThrow(()-> new BusinessException("任务创建失败"));
         log.info("创建任务: {}", taskInQueueDto);
         if (program.get().getBuildin())
             rabbitTemplate.convertAndSend("DFTE.Exchange", "task.inside", taskInQueueDto);
@@ -146,7 +156,7 @@ public class TaskService {
             log.error("未找到节点: {}/{}", workflow.getName(), task.getNodeId());
             return uuids;
         }
-        Optional<WorkflowNode> next = node.get().getNextNode();
+        Optional<WorkflowNode> next = wd.get().getNextNode(node.get());
         if (!next.isPresent()) {
             log.info("工作流结束: {}/{}", rr.getId(), workflow.getName());
             return uuids;
@@ -157,10 +167,16 @@ public class TaskService {
             return uuids;
         }
         List<Object[]> params = new ArrayList<>();
-        for (WorkflowData.WorkflowNode.InputDataInfo info : next.get().getInputDataInfo()) {
-            Optional<Task> parentTask = taskRepository.findById(task.getParent());
+        for (WorkflowData.WorkflowNode.InputDataInfo info : wd.get().getInputDataInfo(next.get())) {
+            Optional<Task> parentTask;
+            UUID parentUuid = task.getParent();
+            if (parentUuid == null) parentTask = Optional.empty();
+            else parentTask = taskRepository.findById(parentUuid);
             while (parentTask.isPresent()) {
                 if (parentTask.get().getNodeId() != info.getFromNode()) {
+                    parentUuid = task.getParent();
+                    if (parentUuid == null) parentTask = Optional.empty();
+                    else parentTask = taskRepository.findById(parentUuid);
                     parentTask = taskRepository.findById(parentTask.get().getParent());
                     continue;
                 }
@@ -182,7 +198,7 @@ public class TaskService {
             for (Object[] param : params) {
                 input.set((String)param[0], ((List<JsonNode>)param[1]).get(i));
             }
-            Optional<UUID> newTaskUuid = createAndStartTask(task.getUuid(), null, rr.getProject(), workflow.getId(), next.get().getId(), program.get().getId(), input);
+            Optional<UUID> newTaskUuid = createAndStartTask(task.getUuid(), null, rr.getId(), rr.getProject(), workflow.getId(), next.get().getId(), program.get().getId(), input);
             if (newTaskUuid.isPresent()) uuids.add(newTaskUuid.get());
         }
         return uuids;
@@ -194,7 +210,7 @@ public class TaskService {
      */
     @Transactional
     @RabbitListener(queues = "DFTE.Queue.Report")
-    public void receiveStatusUpdate(JsonNode data, Channel channel, Message message) {
+    public void receiveStatusUpdate(JsonNode data /*, Channel channel, Message message*/) {
         log.info("收到任务状态更新: {}", data);
         String uuid_str = data.get("uuid").asText("");
         UUID uuid;
@@ -219,82 +235,15 @@ public class TaskService {
         task.setStatus(status);
         task.setRetmsg(data.get("retmsg").asText(""));
         task.setRetdata(data.get("retdata").isArray() ? (ArrayNode) data.get("retdata") : JsonNodeFactory.instance.arrayNode());
-        task.setUpdatedAt(java.time.LocalDateTime.now());
         taskRepository.save(task);
-        try {
-            channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
-        } catch (Exception e) {
-            log.error("无法确认信息: \n\tDeliveryTag: {}\n\tUUID: {}\n\t原因: {}", message.getMessageProperties().getDeliveryTag(), uuid_str, e.getMessage());
-        }
+        // try {
+        //     channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
+        // } catch (Exception e) {
+        //     log.error("无法确认信息: \n\tDeliveryTag: {}\n\tUUID: {}\n\t原因: {}", message.getMessageProperties().getDeliveryTag(), uuid_str, e.getMessage());
+        // }
         if (status == 0 || status == 1) return;
         log.info("任务结束：{}", task);
         // 启动下一个任务
         startNextTask(task);
-    }
-    
-    /**
-     * 转换为TaskInfoDto
-     */
-    private TaskInfoDto convertToTaskInfoDto(Object[] result) {
-        TaskInfoDto dto = new TaskInfoDto();
-        dto.setUuid((UUID) result[0]);
-        dto.setName((String) result[1]);
-        dto.setRunningRecord((Integer) result[2]);
-        dto.setProject((Integer) result[3]);
-        dto.setWorkflow((Integer) result[4]);
-        dto.setNodeId((Integer) result[5]);
-        dto.setProgram((Integer) result[6]);
-        dto.setStatus((Integer) result[7]);
-        dto.setRetmsg((String) result[8]);
-        dto.setCreatedAt((java.time.LocalDateTime) result[9]);
-        dto.setUpdatedAt((java.time.LocalDateTime) result[10]);
-        dto.setProjectName((String) result[11]);
-        dto.setWorkflowName((String) result[12]);
-        dto.setProgramName((String) result[13]);
-        return dto;
-    }
-    
-    /**
-     * 转换为TaskDetailDto
-     */
-    private TaskDetailDto convertToTaskDetailDto(Object[] result) {
-        TaskDetailDto dto = new TaskDetailDto();
-        dto.setUuid((UUID) result[0]);
-        dto.setName((String) result[1]);
-        dto.setParent((UUID) result[2]);
-        dto.setParentName((String) result[3]);
-        dto.setRunningRecord((Integer) result[4]);
-        dto.setProject((Integer) result[5]);
-        dto.setWorkflow((Integer) result[6]);
-        dto.setNodeId((Integer) result[7]);
-        dto.setProgram((Integer) result[8]);
-        dto.setParams((String) result[9]);
-        dto.setStatus((Integer) result[10]);
-        dto.setRetmsg((String) result[11]);
-        dto.setRetdata((String) result[12]);
-        dto.setCreatedAt((java.time.LocalDateTime) result[13]);
-        dto.setUpdatedAt((java.time.LocalDateTime) result[14]);
-        dto.setProjectName((String) result[15]);
-        dto.setWorkflowName((String) result[16]);
-        dto.setProgramName((String) result[17]);
-        return dto;
-    }
-
-    private TaskInQueueDto convertToTaskInQueueDto(Task task) { 
-        TaskInQueueDto dto = new TaskInQueueDto();
-        dto.setUuid(task.getUuid());
-        dto.setName(task.getName());
-        dto.setProjectName(Optional.ofNullable(task.getProjectEntity())
-                                    .map(Project::getName)
-                                    .orElse("无关联项目"));
-        dto.setWorkflowName(Optional.ofNullable(task.getWorkflowEntity())
-                                    .map(Workflow::getName)
-                                    .orElse("无关联工作流"));
-        dto.setProgram(task.getProgram());
-        dto.setProgramName(Optional.ofNullable(task.getProgramEntity())
-                                    .map(Program::getName)
-                                    .orElse("无关联程序"));
-        dto.setParams(task.getParams());
-        return dto;
     }
 }

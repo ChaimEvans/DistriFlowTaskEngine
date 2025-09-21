@@ -2,7 +2,6 @@ package fun.chaim.DFTE.controller;
 
 import fun.chaim.DFTE.common.ApiResponse;
 import fun.chaim.DFTE.dto.ParamDto;
-import fun.chaim.DFTE.dto.ProjectSimpleDto;
 import fun.chaim.DFTE.dto.WorkflowDto;
 import fun.chaim.DFTE.dto.WorkflowSimpleDto;
 import fun.chaim.DFTE.entity.Param;
@@ -114,18 +113,6 @@ public class WorkflowController {
     public ApiResponse<WorkflowDto> unlockWorkflow(@PathVariable Integer id) {
         WorkflowDto result = workflowService.unlockWorkflow(id);
         return ApiResponse.success("工作流解锁成功", result);
-    }
-    
-    /**
-     * 指定id列出所有使用该工作流的项目的id、名称
-     * 
-     * @param id 工作流ID
-     * @return 项目列表
-     */
-    @GetMapping("/{id}/projects")
-    public ApiResponse<List<ProjectSimpleDto>> getProjectsByWorkflowId(@PathVariable Integer id) {
-        List<ProjectSimpleDto> result = workflowService.getProjectsByWorkflowId(id);
-        return ApiResponse.success(result);
     }
     
     /**

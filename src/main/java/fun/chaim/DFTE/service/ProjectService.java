@@ -1,7 +1,7 @@
 package fun.chaim.DFTE.service;
 
 import fun.chaim.DFTE.dto.ProjectDto;
-import fun.chaim.DFTE.dto.ProjectInfoDto;
+import fun.chaim.DFTE.dto.projection.ProjectProjections;
 import fun.chaim.DFTE.entity.Param;
 import fun.chaim.DFTE.entity.Project;
 import fun.chaim.DFTE.exception.ResourceNotFoundException;
@@ -11,13 +11,13 @@ import fun.chaim.DFTE.repository.ProjectRepository;
 import fun.chaim.DFTE.repository.WorkflowRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.JsonNode;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 项目服务
@@ -54,7 +54,7 @@ public class ProjectService {
         Project savedProject = projectRepository.save(project);
         log.info("创建项目成功: {}", savedProject.getName());
         
-        return convertToDto(savedProject);
+        return ProjectDto.fromEntity(savedProject);
     }
     
     /**
@@ -67,7 +67,7 @@ public class ProjectService {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("项目", id));
         
-        return convertToDto(project);
+        return ProjectDto.fromEntity(project);
     }
     
     /**
@@ -75,17 +75,8 @@ public class ProjectService {
      * 
      * @return 项目信息列表
      */
-    public List<ProjectInfoDto> getAllProjects() {
-        List<Object[]> results = projectRepository.findAllProjectInfo();
-        return results.stream()
-                .map(result -> new ProjectInfoDto(
-                        (Integer) result[0],
-                        (String) result[1],
-                        (Integer) result[2],
-                        (String) result[3],
-                        (java.time.LocalDateTime) result[4]
-                ))
-                .collect(Collectors.toList());
+    public Page<ProjectProjections.ProjectInfo> getAllProjects(Integer workflowId, Boolean finish, int page, int size) {
+        return projectRepository.findAllProjectInfo(workflowId, finish, PageRequest.of(page, size));
     }
     
     /**
@@ -120,7 +111,7 @@ public class ProjectService {
         Project savedProject = projectRepository.save(existingProject);
         log.info("更新项目成功: {}", savedProject.getName());
         
-        return convertToDto(savedProject);
+        return ProjectDto.fromEntity(savedProject);
     }
 
     /**
@@ -141,18 +132,5 @@ public class ProjectService {
             if (workflowInput.get(param.getName()) == null) throw new ValidationException("项目输入与工作流不匹配");
         }
         return project;
-    }
-    
-    /**
-     * 转换为DTO
-     */
-    private ProjectDto convertToDto(Project project) {
-        ProjectDto dto = new ProjectDto();
-        dto.setId(project.getId());
-        dto.setName(project.getName());
-        dto.setWorkflow(project.getWorkflow());
-        dto.setWorkflowInput(project.getWorkflowInput());
-        dto.setCreatedAt(project.getCreatedAt());
-        return dto;
     }
 }

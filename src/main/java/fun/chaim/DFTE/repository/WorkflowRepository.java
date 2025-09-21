@@ -49,13 +49,4 @@ public interface WorkflowRepository extends JpaRepository<Workflow, Integer> {
      */
     @Query("SELECT w.name FROM Workflow w WHERE w.id = :id")
     Optional<String> findNameById(@Param("id") Integer id);
-    
-    /**
-     * 查找使用指定工作流的所有项目ID和名称
-     * 
-     * @param workflowId 工作流ID
-     * @return 项目信息列表
-     */
-    @Query("SELECT p.id, p.name FROM Project p WHERE p.workflow = :workflowId")
-    List<Object[]> findProjectsByWorkflowId(@Param("workflowId") Integer workflowId);
 }

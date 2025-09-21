@@ -1,12 +1,12 @@
 package fun.chaim.DFTE.service;
 
-import fun.chaim.DFTE.dto.RunningRecordInfoDto;
+import fun.chaim.DFTE.dto.projection.RunningRecordProjections;
 import fun.chaim.DFTE.entity.Project;
 import fun.chaim.DFTE.entity.RunningRecord;
 import fun.chaim.DFTE.entity.Workflow;
 import fun.chaim.DFTE.entity.WorkflowData;
 import fun.chaim.DFTE.entity.WorkflowData.WorkflowNode;
-import fun.chaim.DFTE.exception.ResourceNotFoundException;
+import fun.chaim.DFTE.exception.BusinessException;
 import fun.chaim.DFTE.repository.ProgramRepository;
 import fun.chaim.DFTE.repository.RunningRecordRepository;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,13 +38,14 @@ public class RunningRecordService {
     private final TaskService taskService;
 
     @Transactional
-    public RunningRecordInfoDto createAndStartRunningRecord(Integer projectId) {
+    public RunningRecordProjections.RunningRecordInfoView createAndStartRunningRecord(Integer projectId) {
         // 验证项目
         Project project = projectService.verifyProject(projectId);
         log.info("项目验证通过: {}/{}", projectId, project.getName());
         // 验证工作流
         Integer workflowId = project.getWorkflow();
         Workflow workflow = workflowService.verifyWokflow(workflowId);
+        log.info("工作流验证通过: {}/{}", workflowId, workflow.getName());
         // 锁定工作流
         workflow.setLock(true);
         // 创建运行记录
@@ -62,13 +62,14 @@ public class RunningRecordService {
         taskService.createAndStartTask(
             null, 
             String.format("启动: %s(%s)", project.getName(), workflow.getName()),
+            rr.getId(),
             projectId,
             workflowId,
             beginNode.getId(),
             programRepository.findByName("DirectPipeline").orElseThrow(() -> new RuntimeException("！！！严重错误：未找到DirectPipeline记录")).getId(),
             workflowInput
         );
-        return convertToRunningRecordInfoDto(rr);
+        return runningRecordRepository.findRunningRecordInfoById(rr.getId()).orElseThrow(() -> new BusinessException("Running Record 未创建成功"));
     }
     
     /**
@@ -81,35 +82,7 @@ public class RunningRecordService {
      * @param size 每页大小
      * @return 运行记录信息分页
      */
-    public Page<RunningRecordInfoDto> getRunningRecordInfoPage(Integer workflowId, Integer projectId, Boolean finish, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Object[]> results = runningRecordRepository.findRunningRecordInfoPage(workflowId, projectId, finish, pageable);
-        
-        return results.map(this::convertToRunningRecordInfoDto);
-    }
-    
-    /**
-     * 转换为RunningRecordInfoDto
-     */
-    private RunningRecordInfoDto convertToRunningRecordInfoDto(Object[] result) {
-        RunningRecordInfoDto dto = new RunningRecordInfoDto();
-        dto.setId((Integer) result[0]);
-        dto.setWorkflow((Integer) result[1]);
-        dto.setProject((Integer) result[2]);
-        dto.setFinish((Boolean) result[3]);
-        dto.setCreatedAt((java.time.LocalDateTime) result[4]);
-        dto.setUpdatedAt((java.time.LocalDateTime) result[5]);
-        dto.setWorkflowName((String) result[6]);
-        dto.setProjectName((String) result[7]);
-        return dto;
-    }
-
-    /**
-     * 转换为RunningRecordInfoDto
-     */
-    private RunningRecordInfoDto convertToRunningRecordInfoDto(RunningRecord rr) {
-        Object[] result = runningRecordRepository.findRunningRecordInfoById(rr.getId())
-            .orElseThrow(() -> new ResourceNotFoundException("运行记录", rr.getId()));
-        return this.convertToRunningRecordInfoDto(result);
+    public Page<RunningRecordProjections.RunningRecordInfoView> getRunningRecordInfoPage(Integer workflowId, Integer projectId, Boolean finish, int page, int size) {
+        return runningRecordRepository.findRunningRecordInfoPage(workflowId, projectId, finish, PageRequest.of(page, size));
     }
 }
