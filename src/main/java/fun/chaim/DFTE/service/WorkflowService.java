@@ -18,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -53,7 +54,7 @@ public class WorkflowService {
         Workflow savedWorkflow = workflowRepository.save(workflow);
         log.info("创建工作流成功: {}", savedWorkflow.getName());
         
-        return WorkflowDto.fromEntity(savedWorkflow, null, null);
+        return WorkflowDto.fromEntity(savedWorkflow, new ArrayList<>(), new ArrayList<>());
     }
 
     /**
@@ -174,7 +175,7 @@ public class WorkflowService {
      * @return 更新后的工作流
      */
     @Transactional
-    public WorkflowDto unlockWorkflow(Integer id) {
+    public WorkflowSimpleDto unlockWorkflow(Integer id) {
         Workflow workflow = workflowRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("工作流", id));
         
@@ -182,7 +183,7 @@ public class WorkflowService {
         Workflow savedWorkflow = workflowRepository.save(workflow);
         log.info("解锁工作流成功: {}", savedWorkflow.getName());
         
-        return getWorkflowById(id);
+        return WorkflowSimpleDto.fromEntity(savedWorkflow);
     }
 
     /**

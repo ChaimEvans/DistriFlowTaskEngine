@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -58,7 +59,7 @@ public class ProgramService {
         Program savedProgram = programRepository.save(program);
         log.info("创建处理程序成功: {}", savedProgram.getName());
         
-        return ProgramDto.fromEntity(savedProgram, null, null);
+        return ProgramDto.fromEntity(savedProgram, new ArrayList<>(), new ArrayList<>());
     }
     
     /**

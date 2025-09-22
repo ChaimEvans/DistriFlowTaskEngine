@@ -61,8 +61,8 @@ public class ParamController {
      */
     @GetMapping("/search")
     public ApiResponse<List<ParamProjections.ParamInfo>> searchParams(
-            @RequestParam String type,
-            @RequestParam Boolean retval,
+            @RequestParam(required = false) String type,
+            @RequestParam(defaultValue = "false", required = false) Boolean retval,
             @RequestParam(defaultValue = "false", required = false) Boolean isWorkflow) {
         List<ParamProjections.ParamInfo> result = paramService.getParamsByTypeAndRetval(type, retval, isWorkflow);
         return ApiResponse.success(result);

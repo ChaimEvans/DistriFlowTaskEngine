@@ -110,8 +110,8 @@ public class WorkflowController {
      * @return 解锁后的工作流
      */
     @PostMapping("/{id}/unlock")
-    public ApiResponse<WorkflowDto> unlockWorkflow(@PathVariable Integer id) {
-        WorkflowDto result = workflowService.unlockWorkflow(id);
+    public ApiResponse<WorkflowSimpleDto> unlockWorkflow(@PathVariable Integer id) {
+        WorkflowSimpleDto result = workflowService.unlockWorkflow(id);
         return ApiResponse.success("工作流解锁成功", result);
     }
     

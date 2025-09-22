@@ -11,6 +11,7 @@ import fun.chaim.DFTE.entity.WorkflowData.WorkflowNode;
 import fun.chaim.DFTE.exception.BusinessException;
 import fun.chaim.DFTE.exception.ResourceNotFoundException;
 import fun.chaim.DFTE.repository.ProgramRepository;
+import fun.chaim.DFTE.repository.RunningRecordRepository;
 import fun.chaim.DFTE.repository.TaskRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +32,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -48,6 +50,7 @@ public class TaskService {
     
     private final TaskRepository taskRepository;
     private final ProgramRepository programRepository;
+    private final RunningRecordRepository runningRecordRepository;
 
     private final RabbitTemplate rabbitTemplate;
     
@@ -133,7 +136,7 @@ public class TaskService {
      * @param task
      * @return
      */
-    @SuppressWarnings("unchecked")
+    // @SuppressWarnings("unchecked")
     public List<UUID> startNextTask(Task task) {
         List<UUID> uuids = new ArrayList<>();
         RunningRecord rr = task.getRunningRecordEntity();
@@ -166,7 +169,7 @@ public class TaskService {
             log.error("未找到处理程序: {}", next.get().getType());
             return uuids;
         }
-        List<Object[]> params = new ArrayList<>();
+        List<Map.Entry<String, List<JsonNode>>> params = new ArrayList<>();
         for (WorkflowData.WorkflowNode.InputDataInfo info : wd.get().getInputDataInfo(next.get())) {
             Optional<Task> parentTask;
             UUID parentUuid = task.getParent();
@@ -185,18 +188,18 @@ public class TaskService {
                         .valueStream()
                         .map(item -> item.get(info.getFromSlotName()))
                         .collect(Collectors.toList());
-                params.add(new Object[] { info.getParamName(), slotData });
+                params.add(Map.entry(info.getParamName(), slotData));
                 break;
             }
         }
         Integer minLen = params.stream()
-                .mapToInt(param -> ((List<?>) ((Object[]) param)[1]).size())
+                .mapToInt(param -> ((List<?>) param.getValue()).size())
                 .min()
                 .orElse(0);
         for (int i = 0; i < minLen; i++) {
             ObjectNode input = JsonNodeFactory.instance.objectNode();
-            for (Object[] param : params) {
-                input.set((String)param[0], ((List<JsonNode>)param[1]).get(i));
+            for (Map.Entry<String, List<JsonNode>> param : params) {
+                input.set(param.getKey(), param.getValue().get(i));
             }
             Optional<UUID> newTaskUuid = createAndStartTask(task.getUuid(), null, rr.getId(), rr.getProject(), workflow.getId(), next.get().getId(), program.get().getId(), input);
             if (newTaskUuid.isPresent()) uuids.add(newTaskUuid.get());
@@ -210,7 +213,7 @@ public class TaskService {
      */
     @Transactional
     @RabbitListener(queues = "DFTE.Queue.Report")
-    public void receiveStatusUpdate(JsonNode data /*, Channel channel, Message message*/) {
+    public void receiveStatusUpdate(JsonNode data) {
         log.info("收到任务状态更新: {}", data);
         String uuid_str = data.get("uuid").asText("");
         UUID uuid;
@@ -236,14 +239,20 @@ public class TaskService {
         task.setRetmsg(data.get("retmsg").asText(""));
         task.setRetdata(data.get("retdata").isArray() ? (ArrayNode) data.get("retdata") : JsonNodeFactory.instance.arrayNode());
         taskRepository.save(task);
-        // try {
-        //     channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
-        // } catch (Exception e) {
-        //     log.error("无法确认信息: \n\tDeliveryTag: {}\n\tUUID: {}\n\t原因: {}", message.getMessageProperties().getDeliveryTag(), uuid_str, e.getMessage());
-        // }
-        if (status == 0 || status == 1) return;
-        log.info("任务结束：{}", task);
+        if (status == 0 || status == 1) return; // 未结束
+        log.info("当前任务结束：{}", task);
         // 启动下一个任务
-        startNextTask(task);
+        List<UUID> uuids = startNextTask(task);
+        if (uuids.size() == 0) {
+            // 无后续任务，更新运行记录
+            RunningRecord rr = task.getRunningRecordEntity();
+            if (rr != null) {
+                rr.setFinish(true);
+                ArrayNode output = rr.getWorkflowOutput();
+                output.addAll(task.getRetdata());
+                rr.setWorkflowOutput(output);
+                runningRecordRepository.save(rr);
+            }
+        }
     }
 }

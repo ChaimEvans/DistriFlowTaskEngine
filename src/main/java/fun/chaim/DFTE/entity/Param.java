@@ -50,8 +50,8 @@ public class Param {
     /**
      * 参数类型
      */
-    @Column(name = "type", length = 128)
-    private String type;
+    @Column(name = "type", length = 128, nullable = false)
+    private String type = "*";
     
     /**
      * 参数描述

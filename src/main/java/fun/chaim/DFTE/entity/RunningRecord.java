@@ -12,6 +12,7 @@ import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -63,7 +64,7 @@ public class RunningRecord {
      */
     @Column(name = "workflow_output", columnDefinition = "JSON")
     @JdbcTypeCode(SqlTypes.JSON)
-    private String workflowOutput;
+    private ArrayNode workflowOutput = JsonNodeFactory.instance.arrayNode();
     
     /**
      * 隶属的项目ID（外键）

@@ -2,6 +2,7 @@ package fun.chaim.DFTE.dto.projection;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public interface RunningRecordProjections {
@@ -76,7 +77,7 @@ public interface RunningRecordProjections {
         /**
          * 启动时工作流输出结果
          */
-        String getWorkflowOutput();
+        ArrayNode getWorkflowOutput();
 
         /**
          * 隶属的项目ID
