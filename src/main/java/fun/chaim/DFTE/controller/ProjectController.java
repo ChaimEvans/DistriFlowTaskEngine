@@ -89,8 +89,8 @@ public class ProjectController {
      * @param id 项目ID
      */
     @PostMapping("/{id}/start")
-    public ApiResponse<RunningRecordProjections.RunningRecordInfoView> startProject(@PathVariable Integer id) {
-        RunningRecordProjections.RunningRecordInfoView result = runningRecordService.createAndStartRunningRecord(id);
+    public ApiResponse<RunningRecordProjections.RunningRecordInfo> startProject(@PathVariable Integer id) {
+        RunningRecordProjections.RunningRecordInfo result = runningRecordService.createAndStartRunningRecord(id);
         return ApiResponse.success("项目开始成功", result);
     }
 }

@@ -7,6 +7,7 @@ import fun.chaim.DFTE.entity.Workflow;
 import fun.chaim.DFTE.entity.WorkflowData;
 import fun.chaim.DFTE.entity.WorkflowData.WorkflowNode;
 import fun.chaim.DFTE.exception.BusinessException;
+import fun.chaim.DFTE.exception.ResourceNotFoundException;
 import fun.chaim.DFTE.repository.ProgramRepository;
 import fun.chaim.DFTE.repository.RunningRecordRepository;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +39,7 @@ public class RunningRecordService {
     private final TaskService taskService;
 
     @Transactional
-    public RunningRecordProjections.RunningRecordInfoView createAndStartRunningRecord(Integer projectId) {
+    public RunningRecordProjections.RunningRecordInfo createAndStartRunningRecord(Integer projectId) {
         // 验证项目
         Project project = projectService.verifyProject(projectId);
         log.info("项目验证通过: {}/{}", projectId, project.getName());
@@ -71,6 +72,16 @@ public class RunningRecordService {
         );
         return runningRecordRepository.findRunningRecordInfoById(rr.getId()).orElseThrow(() -> new BusinessException("Running Record 未创建成功"));
     }
+
+    /**
+     * 根据ID获取运行记录信息（排除workflow_data、workflow_input、workflow_output，联合查询工作流名称、项目名称）
+     * 
+     * @param id 运行记录ID
+     * @return 运行记录信息
+     */
+    public RunningRecordProjections.RunningRecordInfo getRunningRecordInfoById(Integer id) {
+        return runningRecordRepository.findRunningRecordInfoById(id).orElseThrow(() -> new ResourceNotFoundException("Running Record 未找到"));
+    }
     
     /**
      * 分页按条件查询运行记录数据（排除workflow_data、workflow_input、workflow_output，联合查询工作流名称、项目名称）
@@ -82,7 +93,11 @@ public class RunningRecordService {
      * @param size 每页大小
      * @return 运行记录信息分页
      */
-    public Page<RunningRecordProjections.RunningRecordInfoView> getRunningRecordInfoPage(Integer workflowId, Integer projectId, Boolean finish, int page, int size) {
+    public Page<RunningRecordProjections.RunningRecordInfo> getRunningRecordInfoPage(Integer workflowId, Integer projectId, Boolean finish, int page, int size) {
         return runningRecordRepository.findRunningRecordInfoPage(workflowId, projectId, finish, PageRequest.of(page, size));
+    }
+
+    public RunningRecordProjections.RunningRecordDetail getRunningRecordDetailById(Integer id) {
+        return runningRecordRepository.findRunningRecordDetailById(id).orElseThrow(() -> new ResourceNotFoundException("Running Record 未找到"));
     }
 }

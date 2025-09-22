@@ -23,6 +23,18 @@ import org.springframework.web.bind.annotation.*;
 public class RunningRecordController {
     
     private final RunningRecordService runningRecordService;
+
+    /**
+     * 获取运行记录信息（排除workflow_data、workflow_input、workflow_output，联合查询工作流名称、项目名称）
+     * 
+     * @param id 运行记录ID
+     * @return 运行记录信息
+     */
+    @GetMapping("/{id}")
+    public ApiResponse<RunningRecordProjections.RunningRecordInfo> getRunningRecordInfoById(@PathVariable Integer id) {
+        RunningRecordProjections.RunningRecordInfo result = runningRecordService.getRunningRecordInfoById(id);
+        return ApiResponse.success(result);
+    }
     
     /**
      * 分页按条件查询列出运行记录数据（排除workflow_data、workflow_input、workflow_output，联合查询工作流名称、项目名称）
@@ -35,13 +47,25 @@ public class RunningRecordController {
      * @return 运行记录信息分页
      */
     @GetMapping
-    public ApiResponse<List<RunningRecordProjections.RunningRecordInfoView>> getRunningRecordInfoPage(
+    public ApiResponse<List<RunningRecordProjections.RunningRecordInfo>> getRunningRecordInfoPage(
             @RequestParam(required = false) Integer workflow,
             @RequestParam(required = false) Integer project,
             @RequestParam(required = false) Boolean finish,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        List<RunningRecordProjections.RunningRecordInfoView> result = runningRecordService.getRunningRecordInfoPage(workflow, project, finish, page, size).getContent();
+        List<RunningRecordProjections.RunningRecordInfo> result = runningRecordService.getRunningRecordInfoPage(workflow, project, finish, page, size).getContent();
+        return ApiResponse.success(result);
+    }
+
+    /**
+     * 获取运行记录详情
+     * 
+     * @param id 运行记录ID
+     * @return 运行记录详情
+     */
+    @GetMapping("/{id}/detail")
+    public ApiResponse<RunningRecordProjections.RunningRecordDetail> getRunningRecordDetailById(@PathVariable Integer id) {
+        RunningRecordProjections.RunningRecordDetail result = runningRecordService.getRunningRecordDetailById(id);
         return ApiResponse.success(result);
     }
 }
