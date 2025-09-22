@@ -104,16 +104,20 @@ public class TaskService {
      */
     @Transactional
     public Optional<UUID> createAndStartTask(UUID parentUuid, String name, Integer runningRecordId, Integer projectId, Integer workflowId, Integer nodeId, Integer programId, ObjectNode params) {
-        Optional<Program> program = programRepository.findById(programId);
-        if (!program.isPresent()) {
+        Optional<Program> programOpt = programRepository.findById(programId);
+        if (!programOpt.isPresent()) {
             log.error("未找到处理程序: {}", programId);
             return Optional.empty();
         }
+        Program program = programOpt.get();
+        program.setLock(true); // 锁定程序
+        programRepository.save(program);
+        // 创建任务
         UUID taskUuid = UUID.randomUUID();
         Task task = new Task();
         task.setUuid(taskUuid);
         task.setParent(parentUuid);
-        task.setName(name == null ? String.format("%s(%s)", program.get().getName(), taskUuid) : name);
+        task.setName(name == null ? String.format("%s(%s)", program.getName(), taskUuid) : name);
         task.setRunningRecord(runningRecordId);
         task.setProject(projectId);
         task.setWorkflow(workflowId);
@@ -124,7 +128,8 @@ public class TaskService {
         TaskInQueueDto taskInQueueDto = taskRepository.findTaskInQueueByUuid(taskUuid)
                 .orElseThrow(()-> new BusinessException("任务创建失败"));
         log.info("创建任务: {}", taskInQueueDto);
-        if (program.get().getBuildin())
+        // 发送信息
+        if (program.getBuildin())
             rabbitTemplate.convertAndSend("DFTE.Exchange", "task.inside", taskInQueueDto);
         else
             rabbitTemplate.convertAndSend("DFTE.Exchange", "task", taskInQueueDto);
@@ -238,9 +243,17 @@ public class TaskService {
         task.setStatus(status);
         task.setRetmsg(data.get("retmsg").asText(""));
         task.setRetdata(data.get("retdata").isArray() ? (ArrayNode) data.get("retdata") : JsonNodeFactory.instance.arrayNode());
-        taskRepository.save(task);
-        if (status == 0 || status == 1) return; // 未结束
+        if (status == 0 || status == 1) { // 未结束
+            taskRepository.save(task);
+            return;
+        }
+        // 任务结束
         log.info("当前任务结束：{}", task);
+        Program program = task.getProgramEntity();
+        if (program != null) { // 解锁程序
+            program.setLock(false);
+            programRepository.save(program);
+        }
         // 启动下一个任务
         List<UUID> uuids = startNextTask(task);
         if (uuids.size() == 0) {

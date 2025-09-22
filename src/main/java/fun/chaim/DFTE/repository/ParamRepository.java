@@ -78,7 +78,13 @@ public interface ParamRepository extends JpaRepository<Param, Integer> {
      * @param isWorkflow 是否是工作流参数
      * @return 参数信息列表
      */
-    @Query("SELECT p.id AS id, p.name AS name, p.type AS type, p.description AS description, p.require AS require, " +
+    @Query("SELECT p.id AS id, " +
+            "p.name AS name, " +
+            "p.type AS type, " +
+            "p.description AS description, " +
+            "p.require AS require, " +
+            "p.retval AS retval, " +
+            "CASE WHEN p.program IS NOT NULL THEN false ELSE true END AS isWorkflow, " +
             "CASE WHEN p.program IS NOT NULL THEN p.program ELSE p.workflow END AS parentId, " +
             "CASE WHEN p.program IS NOT NULL THEN pr.name ELSE w.name END AS parentName " +
             "FROM Param p " +

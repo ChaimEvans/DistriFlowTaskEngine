@@ -173,4 +173,18 @@ public class ProgramService {
         
         return getProgramDetailById(id);
     }
+
+    /**
+     * 解锁处理程序
+     * @param id 处理程序ID
+     * @return 解锁后的处理程序信息
+     */
+    @Transactional
+    public ProgramDto unlockProgram(Integer id) { 
+        Program program = programRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("处理程序不存在"));
+        program.setLock(false);
+        Program savedProgram = programRepository.save(program);
+        log.info("解锁处理程序成功: {}", savedProgram.getName());
+        return getProgramDetailById(id);
+    }
 }

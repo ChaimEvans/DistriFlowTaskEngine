@@ -12,6 +12,10 @@ public interface ParamProjections {
 
         Boolean getRequire();
 
+        Boolean getRetval();
+
+        Boolean getIsWorkflow();
+
         Integer getParentId();
 
         String getParentName();

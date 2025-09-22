@@ -126,4 +126,16 @@ public class ProgramController {
         ParamDto result = paramService.createProgramParam(programId, param);
         return ApiResponse.success("参数创建成功", result);
     }
+
+    /**
+     * 解锁程序
+     * 
+     * @param programId 程序ID
+     * @return 信息
+     */
+    @PostMapping("/{programId}/unlock")
+    public ApiResponse<ProgramDto> unlockProgram(@PathVariable Integer programId) {
+        ProgramDto result = programService.unlockProgram(programId);
+        return ApiResponse.success("解锁成功", result);
+    }
 }
