@@ -107,7 +107,13 @@ public class WorkflowService {
         Workflow savedWorkflow = workflowRepository.save(newWorkflow);
         log.info("克隆工作流成功: {} -> {}", sourceWorkflow.getName(), newName);
 
-        // TODO 克隆参数
+        // 克隆参数
+        List<Param> params = paramRepository.findByWorkflow(id);
+        for (Param param : params) {
+            param.setId(null);
+            param.setWorkflow(savedWorkflow.getId());
+            paramRepository.save(param);
+        }
         
         return WorkflowDto.fromEntity(savedWorkflow, null, null);
     }
