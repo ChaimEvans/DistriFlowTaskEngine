@@ -1,12 +1,12 @@
 package fun.chaim.DFTE.service;
 
 import fun.chaim.DFTE.dto.ParamDto;
+import fun.chaim.DFTE.dto.WorkflowData;
 import fun.chaim.DFTE.dto.WorkflowDto;
 import fun.chaim.DFTE.dto.WorkflowSimpleDto;
 import fun.chaim.DFTE.entity.Param;
 import fun.chaim.DFTE.entity.Program;
 import fun.chaim.DFTE.entity.Workflow;
-import fun.chaim.DFTE.entity.WorkflowData;
 import fun.chaim.DFTE.exception.ForbiddenException;
 import fun.chaim.DFTE.exception.ResourceNotFoundException;
 import fun.chaim.DFTE.exception.ValidationException;

@@ -11,6 +11,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
 import fun.chaim.DFTE.converter.WorkflowDataConverter;
+import fun.chaim.DFTE.dto.WorkflowData;
 
 import java.time.LocalDateTime;
 import java.util.Optional;

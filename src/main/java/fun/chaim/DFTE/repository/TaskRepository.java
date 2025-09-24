@@ -74,7 +74,7 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     @Query("""
             SELECT t.uuid AS uuid, t.name AS name, t.runningRecord AS runningRecord, t.project AS project,
                    t.workflow AS workflow, t.nodeId AS nodeId, t.program AS program, t.status AS status,
-                   t.retmsg AS retmsg, t.createdAt AS createdAt, t.updatedAt AS updatedAt,
+                   t.retmsg AS retmsg, t.processingNodeMac AS processingNodeMac, t.createdAt AS createdAt, t.updatedAt AS updatedAt,
                    p.name AS projectName, w.name AS workflowName, pr.name AS programName
             FROM Task t
             LEFT JOIN Project p ON t.project = p.id
@@ -108,8 +108,9 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
                 t.uuid AS uuid, t.name AS name, t.parent AS parent, pt.name AS parentName,
                 t.runningRecord AS runningRecord, t.project AS project, t.workflow AS workflow,
                 t.nodeId AS nodeId, t.program AS program, t.params AS params, t.status AS status,
-                t.retmsg AS retmsg, t.retdata AS retdata, t.createdAt AS createdAt, t.updatedAt AS updatedAt,
-                p.name AS projectName, w.name AS workflowName, pr.name AS programName
+                t.retmsg AS retmsg, t.retdata AS retdata, t.processingNodeMac AS processingNodeMac,
+                t.createdAt AS createdAt, t.updatedAt AS updatedAt, p.name AS projectName,
+                w.name AS workflowName, pr.name AS programName
             FROM Task t
             LEFT JOIN Task pt ON t.parent = pt.uuid
             LEFT JOIN Project p ON t.project = p.id

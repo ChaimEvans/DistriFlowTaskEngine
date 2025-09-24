@@ -6,12 +6,11 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
+import fun.chaim.DFTE.dto.WorkflowData;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 
 import java.io.IOException;
-
-import fun.chaim.DFTE.entity.WorkflowData;
 
 @Converter(autoApply = true)
 public class WorkflowDataConverter implements AttributeConverter<WorkflowData, String> {

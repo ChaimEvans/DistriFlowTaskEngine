@@ -1,4 +1,4 @@
-package fun.chaim.DFTE.service;
+package fun.chaim.DFTE.component;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,17 +8,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-// import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-// import com.rabbitmq.client.Channel;
 
 import fun.chaim.DFTE.dto.TaskInQueueDto;
 import fun.chaim.DFTE.entity.Param;
@@ -27,9 +25,9 @@ import fun.chaim.DFTE.repository.ParamRepository;
 import fun.chaim.DFTE.repository.ProgramRepository;
 
 @Slf4j
-@Service
+@Component
 @RequiredArgsConstructor
-public class TaskInsideService {
+public class TaskInsideComponent {
 
     private final ProgramRepository programRepository;
     private final ParamRepository paramRepository;
@@ -37,7 +35,7 @@ public class TaskInsideService {
     private final RabbitTemplate rabbitTemplate;
 
     @RabbitListener(queues = "DFTE.Queue.TaskInside")
-    public void receiveMessage(TaskInQueueDto data /*, Channel channel, Message message*/) {
+    public void receiveMessage(TaskInQueueDto data) {
         log.info("收到信息: {}", data);
         rabbitTemplate.convertAndSend("DFTE.Exchange", "report", makeResponse(data.getUuid().toString(), 1, null, null));
         Executor executor = null;
@@ -66,16 +64,6 @@ public class TaskInsideService {
             rabbitTemplate.convertAndSend("DFTE.Exchange", "report", makeResponse(data.getUuid().toString(), -2, String.format("无法运行程序: %s", data.getProgramName()), null));
             return;
         }
-        
-        // try {
-        //     channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
-        // } catch (Exception e) {
-        //     log.error("无法确认信息: \n\tDeliveryTag: {}\n\tUUID: {}\n\t原因: {}",
-        //             message.getMessageProperties().getDeliveryTag(),
-        //             data.getUuid(),
-        //             e.getMessage()
-        //         );
-        // }
     }
 
     private static ObjectNode makeResponse(String uuid, Integer status, String retmsg, ArrayNode retdata) {
@@ -98,12 +86,31 @@ public class TaskInsideService {
             log.info("注册内部程序: " + name);
             if (!programRepository.existsByName(name)) {
                 log.info("插入数据库: " + name);
-                Program program = programRepository.save(new Program(null, name, name, Executor.registry_desc.get(name), true, null, null, true, null, null));
+                Program program_unsave = new Program();
+                program_unsave.setName(name);
+                program_unsave.setTitle(name);
+                program_unsave.setDescription(Executor.registry_desc.get(name));
+                program_unsave.setBuildin(true);
+                program_unsave.setLock(true);
+                Program program = programRepository.save(program_unsave);
                 for (Object[] param : Executor.registry_params.get(name)) {
-                    paramRepository.save(new Param(null, program.getId(), null, (String) param[0], (String) param[2], (String) param[1], false, (Boolean) param[3], null, null));
+                    Param p = new Param();
+                    p.setProgram(program.getId());
+                    p.setName((String) param[0]);
+                    p.setDescription((String) param[1]);
+                    p.setType((String) param[2]);
+                    p.setRequire((Boolean) param[3]);
+                    p.setRetval(false);
+                    paramRepository.save(p);
                 }
                 for (String[] ret : Executor.registry_returns.get(name)) {
-                    paramRepository.save(new Param(null, program.getId(), null, ret[0], ret[2], ret[1], true, false, null, null));
+                    Param p = new Param();
+                    p.setProgram(program.getId());
+                    p.setName(ret[0]);
+                    p.setDescription(ret[1]);
+                    p.setType(ret[2]);
+                    p.setRetval(true);
+                    paramRepository.save(p);
                 }
             }
         }

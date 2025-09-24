@@ -108,6 +108,12 @@ public class Task {
     @Column(name = "retdata", columnDefinition = "JSON", nullable = false)
     @JdbcTypeCode(SqlTypes.JSON)
     private ArrayNode retdata = JsonNodeFactory.instance.arrayNode();
+
+    /**
+     * 处理该任务的节点的MAC地址
+     */
+    @Column(name = "processing_node_mac", length = 17)
+    private String processingNodeMac;
     
     /**
      * 创建时间

@@ -29,6 +29,8 @@ public interface TaskProjections {
 
         String getRetmsg();
 
+        String getProcessingNodeMac();
+
         LocalDateTime getCreatedAt();
 
         LocalDateTime getUpdatedAt();
@@ -69,6 +71,8 @@ public interface TaskProjections {
         String getRetmsg();
 
         ArrayNode getRetdata();
+
+        String getProcessingNodeMac();
 
         LocalDateTime getCreatedAt();
 

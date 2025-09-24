@@ -89,6 +89,7 @@ CREATE TABLE IF NOT EXISTS Task (
     status INT NOT NULL DEFAULT 0,
     retmsg TEXT,
     retdata JSON NOT NULL,
+    processing_node_mac VARCHAR(17),
     FOREIGN KEY (parent) REFERENCES Task(uuid) ON DELETE SET NULL,
     FOREIGN KEY (running_record) REFERENCES RunningRecord(id) ON DELETE CASCADE,
     FOREIGN KEY (project) REFERENCES Project(id) ON DELETE SET NULL,

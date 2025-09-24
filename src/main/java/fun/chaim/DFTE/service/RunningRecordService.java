@@ -1,11 +1,11 @@
 package fun.chaim.DFTE.service;
 
+import fun.chaim.DFTE.dto.WorkflowData;
+import fun.chaim.DFTE.dto.WorkflowData.WorkflowNode;
 import fun.chaim.DFTE.dto.projection.RunningRecordProjections;
 import fun.chaim.DFTE.entity.Project;
 import fun.chaim.DFTE.entity.RunningRecord;
 import fun.chaim.DFTE.entity.Workflow;
-import fun.chaim.DFTE.entity.WorkflowData;
-import fun.chaim.DFTE.entity.WorkflowData.WorkflowNode;
 import fun.chaim.DFTE.exception.BusinessException;
 import fun.chaim.DFTE.exception.ResourceNotFoundException;
 import fun.chaim.DFTE.repository.ProgramRepository;
@@ -50,11 +50,11 @@ public class RunningRecordService {
         // 锁定工作流
         workflow.setLock(true);
         // 创建运行记录
+        ObjectNode workflowInput = project.getWorkflowInput();
         RunningRecord rr = new RunningRecord();
         rr.setProject(projectId);
         rr.setWorkflow(workflow.getId());
         rr.setWorkflowData(workflow.getData());
-        ObjectNode workflowInput = project.getWorkflowInput();
         rr.setWorkflowInput(workflowInput);
         rr = runningRecordRepository.save(rr);
         // 添加begin任务

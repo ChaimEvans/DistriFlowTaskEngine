@@ -1,13 +1,13 @@
 package fun.chaim.DFTE.service;
 
 import fun.chaim.DFTE.dto.TaskInQueueDto;
+import fun.chaim.DFTE.dto.WorkflowData;
+import fun.chaim.DFTE.dto.WorkflowData.WorkflowNode;
 import fun.chaim.DFTE.dto.projection.TaskProjections;
 import fun.chaim.DFTE.entity.Program;
 import fun.chaim.DFTE.entity.RunningRecord;
 import fun.chaim.DFTE.entity.Task;
 import fun.chaim.DFTE.entity.Workflow;
-import fun.chaim.DFTE.entity.WorkflowData;
-import fun.chaim.DFTE.entity.WorkflowData.WorkflowNode;
 import fun.chaim.DFTE.exception.BusinessException;
 import fun.chaim.DFTE.exception.ResourceNotFoundException;
 import fun.chaim.DFTE.repository.ProgramRepository;
@@ -243,6 +243,7 @@ public class TaskService {
         task.setStatus(status);
         task.setRetmsg(data.get("retmsg").asText(""));
         task.setRetdata(data.get("retdata").isArray() ? (ArrayNode) data.get("retdata") : JsonNodeFactory.instance.arrayNode());
+        task.setProcessingNodeMac(Optional.ofNullable(data.get("mac")).map(JsonNode::asText).orElse(null));
         if (status == 0 || status == 1) { // 未结束
             taskRepository.save(task);
             return;

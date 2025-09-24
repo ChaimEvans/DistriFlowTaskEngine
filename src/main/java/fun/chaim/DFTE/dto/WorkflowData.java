@@ -1,4 +1,4 @@
-package fun.chaim.DFTE.entity;
+package fun.chaim.DFTE.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
