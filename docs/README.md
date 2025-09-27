@@ -29,7 +29,7 @@ src/main/java/fun/chaim/DFTE/
 ```
 
 ## API文档
-[0cviksrddz.apifox.cn](0cviksrddz.apifox.cn)
+[https://0cviksrddz.apifox.cn](https://0cviksrddz.apifox.cn)
 
 ## 前端
 [https://github.com/ChaimEvans/DFTE-Frontend](https://github.com/ChaimEvans/DFTE-Frontend)
